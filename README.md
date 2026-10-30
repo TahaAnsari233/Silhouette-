@@ -22,6 +22,8 @@ After each of the first 14 rooms you choose one of three blessing cards. Each ca
 
 The pause menu lists your blessings.
 
+The throne room boss grows stronger with every blessing you carry in, so a stacked run still gets a real fight. In its second phase it sends shadow waves rolling across the floor. In its third it splits into shadow copies that lock on and dash through you. Roll through them or step out of the line. Its shadow blast can be rolled too: roll as the red ring closes in.
+
 ## Controls
 
 | Input | Action |
@@ -31,9 +33,16 @@ The pause menu lists your blessings.
 | Right click | Parry when the ! above an enemy turns red (+30 energy, up to +50 for parries in a row without getting hit) |
 | Space / X | Roll: you're untouchable mid-tumble, so arrows and strikes miss |
 | E | Shadow Blast (50 energy) |
-| R | Shadow Clone (100 energy) |
+| C | Rending slash (25 energy, unlocks on wave 3) |
+| R | Shadow Clone (100 energy, unlocks on wave 5) |
+| V | Shadow veil (50 energy, unlocks on wave 8) |
 | 1 | Ultimate, once the bar is full (20 kills) |
 | Esc · M | Pause · Sound and music |
+
+Slash, parry and roll sit in the top right. The moves that cost energy sit in a bar at the bottom center, with your energy underneath. Shadow Blast is there from the start; each other move unlocks with a banner when you reach its wave:
+- Rending slash: lunge forward and cut through every enemy in a line. It staggers them and knights can't block it.
+- Shadow Clone: summon a shadow that fights beside you for a while.
+- Shadow veil: turn nearly invisible for 3 seconds. Enemies lose track of you, and your next hit is a critical. The Betrayer only loses you for a moment.
 
 Every 3 kills a green heal orb drops near you. Walk over it for +15 HP and +25 energy before it fades (8 seconds). Energy past 100 isn't wasted: every 25 extra counts as a kill toward your ultimate. The final boss drops one at 75%, 50% and 25% health.
 

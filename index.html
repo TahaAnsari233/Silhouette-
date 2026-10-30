@@ -97,12 +97,12 @@ canvas{width:100%;height:100%;display:block;image-rendering:crisp-edges;image-re
 .skill .prog i{display:block;height:100%;width:0;background:var(--void)}
 .skill.ready{color:var(--bone);box-shadow:0 0 0 .2cqw #000,inset 0 0 0 .2cqw var(--void),0 0 1.2cqw rgba(142,108,255,.45)}
 .skill.ready .prog i{background:#c2b2ff}
-.skill.deny,.meter.deny{animation:deny .28s steps(4)}
+.skill.deny,.slot.deny,.meter.deny{animation:deny .28s steps(4)}
 @keyframes deny{25%{transform:translateX(-.4cqw)}75%{transform:translateX(.4cqw)}}
-.skill.corrupt{color:#ff6a5f;box-shadow:0 0 0 .2cqw #000,inset 0 0 0 .2cqw #5a1218}
-.skill.corrupt kbd{color:#ff6a5f;text-decoration:line-through}
+.skill.corrupt,.slot.corrupt{color:#ff6a5f;box-shadow:0 0 0 .2cqw #000,inset 0 0 0 .2cqw #5a1218}
+.skill.corrupt kbd,.slot.corrupt kbd{color:#ff6a5f;text-decoration:line-through}
 .skill.corrupt .prog i{background:#a3161f}
-.skill.glitch{animation:glitch .16s steps(2) infinite;color:#fff;text-shadow:.25cqw 0 0 #ff2a4a,-.25cqw 0 0 #2affe6}
+.skill.glitch,.slot.glitch{animation:glitch .16s steps(2) infinite;color:#fff;text-shadow:.25cqw 0 0 #ff2a4a,-.25cqw 0 0 #2affe6}
 .skill.glitch kbd{text-decoration:none;color:#fff}
 @keyframes glitch{
   0%{transform:translate(.35cqw,-.2cqw);clip-path:inset(8% 0 42% 0)}
@@ -110,6 +110,28 @@ canvas{width:100%;height:100%;display:block;image-rendering:crisp-edges;image-re
   66%{transform:translate(.15cqw,0) skewX(14deg);clip-path:inset(0 0 0 0)}
   100%{transform:none;clip-path:inset(20% 0 20% 0)}
 }
+/* energy moves: icon slots along the bottom center, with a thin energy bar underneath */
+.hud-b{position:absolute;left:50%;bottom:1.2cqw;transform:translateX(-50%);display:grid;grid-template-columns:repeat(4,4.6cqw);gap:.8cqw .7cqw}
+.slot{position:relative;height:4.6cqw;background:rgba(10,9,16,.86);box-shadow:0 0 0 .2cqw #000,inset 0 0 0 .18cqw var(--line);display:grid;place-items:center;overflow:hidden}
+.slot canvas{width:2.9cqw;height:2.9cqw;image-rendering:pixelated;opacity:.35;filter:grayscale(.8)}
+.slot kbd{position:absolute;left:.35cqw;top:.25cqw;font-family:var(--ui);font-weight:700;font-size:max(7px,.95cqw);color:var(--bone);line-height:1;text-shadow:.12cqw .12cqw 0 #000;z-index:2}
+.slot .cost{position:absolute;right:.35cqw;bottom:.3cqw;font-size:max(6px,.78cqw);font-weight:400;color:#9a8cc8;line-height:1;text-shadow:.12cqw .12cqw 0 #000;z-index:2;white-space:nowrap}
+.slot .cd{position:absolute;left:.18cqw;right:.18cqw;top:.18cqw;height:0;background:rgba(0,0,0,.62);z-index:1}
+.slot .lock{display:none;font-size:max(6px,.78cqw);color:#77728a;letter-spacing:.08em}
+.slot.ready{box-shadow:0 0 0 .2cqw #000,inset 0 0 0 .2cqw var(--void),0 0 1.2cqw rgba(142,108,255,.45)}
+.slot.ready canvas{opacity:1;filter:none}
+.slot.ready .cost{color:#d9ceff}
+.slot.active{box-shadow:0 0 0 .2cqw #000,inset 0 0 0 .2cqw #c9b8ff}
+.slot.active canvas{opacity:.8;filter:none}
+.slot.lockd canvas,.slot.lockd .cost{display:none}
+.slot.lockd .lock{display:block}
+.slot.lockd kbd{color:#5d5870}
+.slot.new{animation:newmove .3s steps(2) 10}
+@keyframes newmove{50%{box-shadow:0 0 0 .2cqw #000,inset 0 0 0 .25cqw #e6b450,0 0 1.6cqw rgba(230,180,80,.7)}}
+.slot.corrupt .cost{left:0;right:0;text-align:center;color:#ff6a5f}
+.hud-b .ebar{grid-column:1/-1;position:relative;height:.6cqw;background:#0b0a12;box-shadow:0 0 0 .2cqw #000}
+.hud-b .ebar i{display:block;height:100%;width:0;background:var(--void)}
+.hud-b .ebar b{position:absolute;top:0;bottom:0;width:.2cqw;background:#000}
 .sys{position:absolute;right:1.4cqw;bottom:.6cqw;font-size:max(7px,.75cqw);color:#77728a;letter-spacing:.1em}
 
 /* ---------- Banner + dialog ---------- */
@@ -248,9 +270,10 @@ button:active{transform:translate(.2cqw,.2cqw)}
 
 @media (prefers-reduced-motion: reduce){
   #titleH span{animation:none}
-  .skill.glitch,.meter.low .fill,.meter.en.full .fill,.banner{animation:none}
+  .skill.glitch,.slot.glitch,.slot.new,.meter.low .fill,.meter.en.full .fill,.banner{animation:none}
 }
 </style>
+
 </head>
 <body>
 <div id="stage">
@@ -273,8 +296,14 @@ button:active{transform:translate(.2cqw,.2cqw)}
         <div class="skill ready" id="skF"><kbd class="sm">CLICK</kbd><span>Slash</span></div>
         <div class="skill" id="skParry"><kbd class="sm">R-CLICK</kbd><span>Parry</span><b class="prog"><i id="parryProg"></i></b></div>
         <div class="skill" id="skRoll"><kbd>SPC</kbd><span>Roll</span><b class="prog"><i id="rollProg"></i></b></div>
-        <div class="skill" id="skE"><kbd>E</kbd><span id="eLabel">Blast 50</span><b class="prog"><i id="eProg"></i></b></div>
-        <div class="skill" id="skR"><kbd>R</kbd><span id="rLabel">Clone 100</span><b class="prog"><i id="rProg"></i></b></div>      </div>
+      </div>
+      <div class="hud-b" id="moveBar">
+        <div class="slot" id="skE" title="Shadow Blast"><canvas width="11" height="11"></canvas><kbd>E</kbd><b class="cost" id="eCost">50</b><i class="cd" id="eCd"></i><span class="lock">W1</span></div>
+        <div class="slot" id="skC" title="Rending slash"><canvas width="11" height="11"></canvas><kbd>C</kbd><b class="cost" id="cCost">25</b><i class="cd" id="cCd"></i><span class="lock">WAVE 3</span></div>
+        <div class="slot" id="skR" title="Shadow Clone"><canvas width="11" height="11"></canvas><kbd>R</kbd><b class="cost" id="rCost">100</b><i class="cd" id="rCd"></i><span class="lock">WAVE 5</span></div>
+        <div class="slot" id="skV" title="Shadow veil"><canvas width="11" height="11"></canvas><kbd>V</kbd><b class="cost" id="vCost">50</b><i class="cd" id="vCd"></i><span class="lock">WAVE 8</span></div>
+        <div class="ebar"><i id="barEn"></i><b style="left:25%"></b><b style="left:50%"></b><b style="left:75%"></b></div>
+      </div>
       <div class="sys">ESC PAUSE · M <span id="muteTxt">SOUND ON</span></div>
     </div>
 
@@ -314,7 +343,9 @@ button:active{transform:translate(.2cqw,.2cqw)}
           <div><dt>RIGHT CLICK</dt><dd>Parry on red !</dd></div>
           <div><dt>SPACE / X</dt><dd>Roll</dd></div>
           <div><dt>E</dt><dd>Blast · 50 energy</dd></div>
-          <div><dt>R</dt><dd>Clone · 100 energy</dd></div>
+          <div><dt>C</dt><dd>Rending slash · 25 · wave 3</dd></div>
+          <div><dt>R</dt><dd>Clone · 100 · wave 5</dd></div>
+          <div><dt>V</dt><dd>Shadow veil · 50 · wave 8</dd></div>
           <div><dt>1</dt><dd>Ultimate · 20 kills</dd></div>
           <div><dt>ESC · M</dt><dd>Pause · Sound</dd></div>
         </dl>
@@ -339,7 +370,9 @@ button:active{transform:translate(.2cqw,.2cqw)}
           <div><dt>RIGHT CLICK</dt><dd>Parry on red !</dd></div>
           <div><dt>SPACE / X</dt><dd>Roll</dd></div>
           <div><dt>E</dt><dd>Blast · 50 energy</dd></div>
-          <div><dt>R</dt><dd>Clone · 100 energy</dd></div>
+          <div><dt>C</dt><dd>Rending slash · 25 · wave 3</dd></div>
+          <div><dt>R</dt><dd>Clone · 100 · wave 5</dd></div>
+          <div><dt>V</dt><dd>Shadow veil · 50 · wave 8</dd></div>
           <div><dt>1</dt><dd>Ultimate · 20 kills</dd></div>
           <div><dt>ESC · M</dt><dd>Pause · Sound</dd></div>
         </dl>
@@ -484,7 +517,7 @@ function exitOpen() { return ROOM && ROOM.exit != null && (G.state === 'clear' |
 
 /* ---------------- Music ---------------- */
 // Generated chiptune loops (64 sixteenth-note steps). "Steel and shadow" plays during the waves,
-// "The Betrayer" during the boss fight, and the cutscenes stay silent. M mutes music and effects together.
+// "Mirror duel" during the boss fight, and the cutscenes stay silent. M mutes music and effects together.
 const MUSIC_VOL = .18;
 const MUSIC = {
   waves: { bpm: 150, build(add) {
@@ -497,14 +530,23 @@ const MUSIC = {
     });
     [[0, 76, 6], [6, 79, 2], [8, 78, 8], [16, 76, 8], [24, 72, 8], [32, 74, 6], [38, 78, 2], [40, 81, 8], [48, 78, 8], [56, 75, 8]].forEach(([s, m, l]) => add(s, m, l, 'lead', .8));
   } },
-  boss: { bpm: 165, build(add) {
-    const leads = [[72, 71, 72, 75, 74, 72, 71, 67], [68, 67, 68, 72, 75, 72, 68, 67], [65, 68, 72, 77, 75, 72, 68, 65], [67, 71, 74, 79, 77, 74, 71, 74]];
-    [36, 32, 29, 31].forEach((r, b) => {
-      for (let q = 0; q < 4; q++) { [0, 2, 3].forEach(o => add(b * 16 + q * 4 + o, r, 1, 'bass')); add(b * 16 + q * 4, 0, 0, 'kick'); add(b * 16 + q * 4 + 2, 0, 0, 'hat', .5); }
-      [4, 12].forEach(s => add(b * 16 + s, 0, 0, 'snare'));
-      leads[b].forEach((m, k) => add(b * 16 + k * 2, m, 2, 'lead', .85));
-      add(b * 16, r + 24, 16, 'drone', .5);
+  // "Mirror duel": each lead phrase is echoed an octave lower, like the clone copying you
+  boss: { bpm: 180, build(add) {
+    const motifs = [[74, 77, 76, 74], [74, 72, 70, 69], [72, 76, 79, 76], [73, 76, 79, 81]];
+    [[38, [0, 3, 7]], [34, [0, 4, 7]], [36, [0, 4, 7]], [33, [0, 4, 7]]].forEach(([r, iv], b) => {
+      const o = b * 16;
+      for (let e = 0; e < 8; e++) add(o + e * 2, r + (e % 2 ? 12 : 0), 2, 'bass');
+      for (let s = 0; s < 16; s++) add(o + s, r + 24 + iv[s % 3] + (s % 6 > 2 ? 12 : 0), 1, 'arp', .4);
+      [0, 4, 8, 10, 12].forEach(s => add(o + s, 0, 0, 'kick')); [4, 12].forEach(s => add(o + s, 0, 0, 'snare'));
+      for (let s = 1; s < 16; s += 2) add(o + s, 0, 0, 'hat', .5);
+      motifs[b].forEach((m, k) => { add(o + k * 2, m, 2, 'lead', .85); add(o + 8 + k * 2, m - 12, 2, 'lead', .6); });
     });
+  } },
+  // phase 3: the same duel, faster, with a pounding kick and snare fills
+  boss3: { bpm: 200, build(add) {
+    MUSIC.boss.build(add);
+    for (let s = 0; s < 64; s += 2) if (s % 16 !== 0 && s % 16 !== 4 && s % 16 !== 8 && s % 16 !== 10 && s % 16 !== 12) add(s, 0, 0, 'kick', .8);
+    for (let b = 0; b < 4; b++) [13, 14, 15].forEach(s => add(b * 16 + s, 0, 0, 'snare', b === 3 ? .8 : .45));
   } },
 };
 const Music = {
@@ -563,7 +605,7 @@ const Music = {
 function musicFor() {
   if (!G) return null;
   const s = G.state;
-  if (s === 'boss' || (s === 'dying' && G.wave >= 16)) return 'boss';
+  if (s === 'boss' || (s === 'dying' && G.wave >= 16)) return G.boss && G.boss.phase === 3 && !G.boss.dead ? 'boss3' : 'boss';
   if (['intro', 'fight', 'clear', 'pick', 'door', 'dying'].includes(s)) return 'waves';
   return null; // title, cutscenes, coronation and end screens stay quiet
 }
@@ -1105,6 +1147,7 @@ function gatherLights() {
   for (const a of G.allies) if (!a.dead) add(a.x, a.y - 8, 34, .45, 'violet');
   for (const e of G.enemies) if (!e.dead) add(e.x, e.y - 14 * (e.scale || 1), e.kind === 'boss' ? 46 : 18, e.kind === 'boss' ? .7 : .42, e.kind === 'boss' || e.kind === 'rogue' ? 'red' : 'warm');
   for (const ci of G.circles) add(ci.x, ci.y, ci.r * 2.2, .35 + .55 * ci.t / ci.dur, 'red');
+  for (const h of G.hazards) add(h.x, h.y - 4, h.type === 'wave' ? 24 : 18, .45, 'red');
   for (const o of G.orbs) add(o.x, o.y - 5, 30, .65, 'green');
   for (const p of G.proj) if (p.friendly) add(p.x, p.y, 20, .5, 'violet');
   for (const f of G.fx) {
@@ -1241,7 +1284,7 @@ for (const [k, t] of Object.entries(TYPES)) {
   t.windup *= k === 'rogue' ? 1.2 : k === 'mage' ? 1 : TEMPO.windup;
   t.recover *= TEMPO.recover; t.cd *= TEMPO.cd; t.spd *= TEMPO.spd;
 }
-const BOSS_BLAST_WIND = [.6, .52, .44], BOSS_COMBO_PRE = [.4, .36, .32];
+const BOSS_BLAST_WIND = [.6, .52, .44], BOSS_COMBO_PRE = [.4, .36, .32], BOSS_WAVE_WIND = .55;
 const WAVES = [null,
   { bandit: 5 }, { bandit: 7 }, { bandit: 9 },
   { bandit: 6, spear: 3 }, { bandit: 7, spear: 4 }, { bandit: 8, spear: 6 },
@@ -1295,10 +1338,10 @@ const keys = {}, pressed = {};
 function makePlayer(x = 200, y = 150) {
   return { kind: 'player', x, y, r: 5, hp: 100, maxHp: 100, energy: 0, face: Math.PI / 2, state: 'idle', st: 0, combo: 0, lastCombo: 0,
     comboQueued: false, comboWindow: 0, hitDone: false, atkCd: 0, rollCd: 0, rollDir: 0, parryCd: 0, inv: 0, flash: 0, walk: 0, moving: false,
-    kx: 0, ky: 0, crown: false, ghostT: 0 };
+    kx: 0, ky: 0, crown: false, ghostT: 0, rendCd: 0 };
 }
 function makeWorld(state) {
-  return { state, stateT: 0, wave: 1, lives: 3, enemies: [], allies: [], proj: [], circles: [], fx: [], parts: [], spawnQ: [], spawnT: 0, orbs: [], orbKills: 0, bossOrbs: 0, ult: 0, waveUlt: 0, ultT: 0, shield: 0, flashUlt: 0, parryChain: 0, overflow: 0, mageLock: 0,
+  return { state, stateT: 0, wave: 1, lives: 3, enemies: [], allies: [], proj: [], circles: [], hazards: [], fx: [], parts: [], spawnQ: [], spawnT: 0, orbs: [], orbKills: 0, bossOrbs: 0, ult: 0, waveUlt: 0, ultT: 0, shield: 0, flashUlt: 0, parryChain: 0, overflow: 0, mageLock: 0, veilT: 0, unlockSeen: 0,
     kills: 0, deaths: 0, time: 0, runTime: 0, shake: 0, hitstop: 0, slow: 0, boss: null, glitch: null, cs: null, dlg: null,
     paused: false, bannerT: 0, waveEnergy: 0, flashRed: 0, player: makePlayer(200, state === 'title' ? 100 : 150) };
 }
@@ -1317,7 +1360,7 @@ function beginWave(n) {
   P.x = ROOM_DEFS[n - 1].w / 2; P.y = ROOM_DEFS[n - 1].h - 30; P.face = -Math.PI / 2; P.kx = P.ky = 0;
   for (const a of G.allies) { a.x = P.x + rnd(-14, 14); a.y = P.y + 6; }
   loadRoom(n - 1); G.fx = G.fx.filter(f => f.type === 'num');
-  G.enemies = []; G.proj = []; G.circles = []; G.orbs = [];
+  G.enemies = []; G.proj = []; G.circles = []; G.hazards = []; G.orbs = []; G.veilT = 0;
   G.spawnQ = buildWave(n); G.spawnT = 0;
   if (G.wellWave !== n) { G.wellWave = n; P.energy = Math.min(100, P.energy + bv('well')); }
   G.waveEnergy = P.energy; G.waveUlt = G.ult; endUlt(true);
@@ -1359,9 +1402,18 @@ function makeAlly(x, y) {
   return { kind: 'clone', x, y, r: 5, hp: 50, maxHp: 50, life: cloneLife(), face: G.player.face, state: 'idle', st: 0, cd: 0, combo: 0, hitDone: false,
     flash: 0, kx: 0, ky: 0, walk: 0, moving: false, alpha: 1 };
 }
+// the boss grows with your blessings: each point (common 1, rare 1.5, legendary 2.5) adds 1.25% hp and 0.75% damage
+const BOSS_HP = 1100, BOSS_DMG = 1.1, BOSS_TIER_PTS = [1, 1.5, 2.5], BOSS_PTS_MAX = 20;
+// a roll started this close before the boss's blast goes off still dodges it, even if the tumble has ended
+const BOSS_BLAST_DODGE = .6;
+function bossScale() {
+  const pts = Math.min(BOSS_PTS_MAX, (G.picks || []).reduce((s, p) => s + BOSS_TIER_PTS[p.tier], 0));
+  return { hp: 1 + pts * .0125, dmg: 1 + pts * .0075 };
+}
 function makeBoss(x, y) {
-  return { kind: 'boss', hostile: true, T: { kb: .25, poise: 3 }, x, y, r: 8, hp: 1000, maxHp: 1000, scale: 1.4, face: Math.PI / 2, aim: 0,
-    state: 'chase', st: 0, cd: 1.2, blastCd: 4, dashCd: 5, rollCd: 2, combo: 0, hitIdx: -1, flash: 0, kx: 0, ky: 0, walk: 0, moving: false,
+  const sc = bossScale(), hp = Math.round(BOSS_HP * sc.hp);
+  return { kind: 'boss', hostile: true, T: { kb: .25, poise: 3 }, x, y, r: 8, hp, maxHp: hp, dm: BOSS_DMG * sc.dmg, scale: 1.4, face: Math.PI / 2, aim: 0,
+    state: 'chase', st: 0, cd: 1.2, blastCd: 4, dashCd: 5, rollCd: 2, waveCd: 0, copyCd: 1.5, combo: 0, hitIdx: -1, flash: 0, kx: 0, ky: 0, walk: 0, moving: false,
     phase: 1, tele: false, stagT: 0, recT: 0, dashHit: false, alpha: 1 };
 }
 
@@ -1384,7 +1436,7 @@ function damageEnemy(e, dmg, sx, sy, opt = {}) {
   if (e.kind === 'boss' && (e.state === 'roll' || e.state === 'roar')) { num(e.x, e.y - 22, 'MISS', '#9a95ad'); Sfx.play('miss'); return 'miss'; }
   const from = Math.atan2(sy - e.y, sx - e.x), away = from + Math.PI;
   let blocked = false;
-  if (e.kind === 'knight' && !opt.blast && !opt.parry && e.state !== 'windup' && e.state !== 'stagger' && Math.abs(angDiff(e.face, from)) < 1.15) {
+  if (e.kind === 'knight' && !opt.blast && !opt.parry && !opt.rend && e.state !== 'windup' && e.state !== 'stagger' && Math.abs(angDiff(e.face, from)) < 1.15) {
     blocked = true; dmg = Math.ceil(dmg * .15);
     num(e.x, e.y - 20, 'BLOCK', '#c9cede'); Sfx.play('clang');
     burst(e.x + Math.cos(from) * 6, e.y - 8 + Math.sin(from) * 4, '#fff6c8', 6, 70, .25);
@@ -1402,7 +1454,7 @@ function damageEnemy(e, dmg, sx, sy, opt = {}) {
   let stagger = false;
   if (poise === 0) stagger = true;
   else if (poise === 1) stagger = opt.heavy || opt.blast;
-  else if (poise === 2) stagger = opt.blast || (opt.heavy && !blocked);
+  else if (poise === 2) stagger = opt.blast || opt.rend || (opt.heavy && !blocked);
   else if (poise === 3) stagger = opt.blast && e.state !== 'dash';
   if (stagger && !blocked) {
     e.state = 'stagger'; e.st = 0; e.stagT = opt.blast ? .5 : poise === 3 ? .4 : .24;
@@ -1595,11 +1647,11 @@ function doPlayerHit() {
   const P = G.player, A0 = ATK[P.combo], reach = G.ultT > 0 ? ULT_REACH : 1;
   const A = { ...A0, range: A0.range * reach, arc: A0.arc + (reach > 1 ? .15 : 0) };
   // Hits deal damage only; energy comes from parries alone.
-  let hit = false;
+  let hit = false; const veiled = G.veilT > 0;
   for (const e of hostiles()) {
     const d = dist(P, e), a = Math.atan2(e.y - P.y, e.x - P.x);
     if (d <= A.range + e.r && (Math.abs(angDiff(P.face, a)) < A.arc || d < e.r + 6)) {
-      const crit = Math.random() < bv('crit') / 100;
+      const crit = veiled || Math.random() < bv('crit') / 100;
       const res = damageEnemy(e, A.dmg * (1 + bv('edge') / 100) * (crit ? 2 : 1), P.x, P.y, { heavy: A.heavy || crit, crit });
       if (res === 'hit' || res === 'block') hit = true;
     }
@@ -1608,12 +1660,12 @@ function doPlayerHit() {
     const d = Math.hypot(p.x - P.x, p.y - (P.y - 6)), a = Math.atan2(p.y - P.y + 6, p.x - P.x);
     if (d < A.range + 4 && Math.abs(angDiff(P.face, a)) < A.arc + .2) { p.dead = true; burst(p.x, p.y, '#fff3c4', 5, 60, .25); num(p.x, p.y - 4, 'CUT', '#fff3c4'); }
   }
-  if (hit) { G.hitstop = A.heavy ? .05 : .018; Sfx.play('hit'); shake(A.heavy ? 2.5 : 1); }
+  if (hit) { G.hitstop = A.heavy ? .05 : .018; Sfx.play('hit'); shake(A.heavy ? 2.5 : 1); endVeil(); }
 }
 function tryBlast() {
   const P = G.player;
   if (P.energy < blastCost()) { deny('skE'); return; }
-  P.energy -= blastCost(); P.inv = Math.max(P.inv, .3);
+  P.energy -= blastCost(); P.inv = Math.max(P.inv, .3); endVeil();
   G.fx.push({ type: 'ring', x: P.x, y: P.y - 4, r0: 4, r1: 60, t: 0, dur: .35, col: '#8e6cff' });
   G.fx.push({ type: 'ring', x: P.x, y: P.y - 4, r0: 2, r1: 44, t: 0, dur: .28, col: '#0b0812' });
   burst(P.x, P.y - 6, '#120d1d', 30, 160, .5); burst(P.x, P.y - 6, '#8e6cff', 14, 120, .4);
@@ -1624,6 +1676,7 @@ function tryBlast() {
 function tryClone() {
   const P = G.player;
   if (G.state === 'boss') { deny('skR'); Sfx.play('glitch'); num(P.x, P.y - 24, 'IT WILL NOT ANSWER', '#ff5a50'); return; }
+  if (!moveOpen('clone')) return;
   if (G.allies.some(a => !a.dead)) { deny('skR'); num(P.x, P.y - 24, 'CLONE IS OUT', '#c3b0ff'); return; }
   if (P.energy < 100) { deny('skR'); return; }
   P.energy = 0;
@@ -1631,6 +1684,78 @@ function tryClone() {
   G.allies.push(a);
   burst(a.x, a.y - 7, '#8e6cff', 20, 80, .5); burst(a.x, a.y - 7, '#000', 14, 60, .5);
   Sfx.play('clone');
+}
+/* ---------------- Unlockable moves ---------------- */
+// Energy moves live in the bottom bar. Blast is there from the start; the others unlock as you go deeper.
+const REND_COST = 25, REND_T = .16, REND_DIST = 56, REND_CD = .6, REND_DMG = 30;
+const VEIL_COST = 50, VEIL_T = 3, VEIL_BOSS_BLIND = 1.2;
+const MOVES = [
+  { id: 'blast', el: 'skE', key: 'E', name: 'Shadow Blast', wave: 1, icon: 'burst', pal: ['#8e6cff', '#d9ceff'] },
+  { id: 'rend', el: 'skC', key: 'C', name: 'Rending slash', wave: 3, icon: 'rend', pal: ['#8e6cff', '#ffffff'], hint: 'lunge through every enemy in a line' },
+  { id: 'clone', el: 'skR', key: 'R', name: 'Shadow Clone', wave: 5, icon: 'twin', pal: ['#5b46a8', '#c3b0ff'], hint: 'summon a shadow to fight beside you' },
+  { id: 'veil', el: 'skV', key: 'V', name: 'Shadow veil', wave: 8, icon: 'veil', pal: ['#6b5a9c', '#ff6a4a'], hint: 'enemies lose you; your next hit crits' },
+];
+const MOVE_BY = Object.fromEntries(MOVES.map(m => [m.id, m]));
+const MOVE_COST = { blast: () => blastCost(), rend: () => REND_COST, clone: () => 100, veil: () => VEIL_COST };
+function moveUnlocked(id) { return G.wave >= MOVE_BY[id].wave; }
+function moveOpen(id) {
+  if (moveUnlocked(id)) return true;
+  const m = MOVE_BY[id], P = G.player;
+  deny(m.el); num(P.x, P.y - 24, 'UNLOCKS ON WAVE ' + m.wave, '#9a8cc8');
+  return false;
+}
+// announce a move the first time its wave starts
+function checkUnlock() {
+  if (G.unlockSeen >= G.wave) return;
+  G.unlockSeen = G.wave;
+  const m = MOVES.find(x => x.wave === G.wave && x.wave > 1); if (!m) return;
+  showBanner('New move: ' + m.name, 'Press ' + m.key + ' · ' + MOVE_COST[m.id]() + ' energy · ' + m.hint, 3, 'gold');
+  const el = $(m.el); el.classList.remove('new'); void el.offsetWidth; el.classList.add('new');
+  Sfx.play('unlock');
+}
+function tryRend() {
+  const P = G.player;
+  if (!moveOpen('rend') || P.state === 'rend' || P.state === 'roll' || P.state === 'parry') return;
+  if (P.rendCd > 0) return;
+  if (P.energy < REND_COST) { deny('skC'); return; }
+  P.energy -= REND_COST;
+  // aim at the nearest enemy roughly ahead, otherwise straight along your facing
+  let aim = P.face, bd = 90;
+  for (const e of hostiles()) { const d = dist(P, e), a = Math.atan2(e.y - P.y, e.x - P.x); if (d < bd && Math.abs(angDiff(P.face, a)) < 1.2) { bd = d; aim = a; } }
+  P.state = 'rend'; P.st = 0; P.face = aim; P.rendDir = aim; P.rendX = P.x; P.rendY = P.y; P.rendHit = new Set(); P.ghostT = 0;
+  P.inv = Math.max(P.inv, REND_T); P.rendCrit = G.veilT > 0;
+  Sfx.play('dash'); burst(P.x, P.y - 6, '#8e6cff', 8, 60, .3);
+}
+function rendHits(P) {
+  const x0 = P.rendX, y0 = P.rendY, vx = P.x - x0, vy = P.y - y0, L2 = vx * vx + vy * vy || 1;
+  for (const e of hostiles()) {
+    if (P.rendHit.has(e)) continue;
+    const k = clamp(((e.x - x0) * vx + (e.y - y0) * vy) / L2, 0, 1);
+    if (Math.hypot(e.x - (x0 + vx * k), e.y - (y0 + vy * k)) > e.r + 9) continue;
+    P.rendHit.add(e);
+    const crit = P.rendCrit || Math.random() < bv('crit') / 100;
+    damageEnemy(e, REND_DMG * (1 + bv('edge') / 100) * (crit ? 2 : 1), x0, y0, { heavy: true, rend: true, crit, kb: 120 });
+    G.hitstop = .04; Sfx.play('hit'); shake(2);
+  }
+  for (const p of G.proj) if (!p.friendly && Math.hypot(p.x - P.x, p.y - (P.y - 6)) < 10) { p.dead = true; burst(p.x, p.y, '#fff3c4', 5, 60, .25); }
+}
+function endRend(P) {
+  P.state = 'idle'; P.rendCd = REND_CD;
+  G.fx.push({ type: 'rend', x0: P.rendX, y0: P.rendY - 6, x1: P.x, y1: P.y - 6, t: 0, dur: .32 });
+  if (P.rendHit.size) endVeil();
+}
+function tryVeil() {
+  const P = G.player;
+  if (!moveOpen('veil') || G.veilT > 0) return;
+  if (P.energy < VEIL_COST) { deny('skV'); return; }
+  P.energy -= VEIL_COST; G.veilT = VEIL_T;
+  burst(P.x, P.y - 8, '#000', 24, 70, .6, 2); burst(P.x, P.y - 8, '#8e6cff', 10, 50, .5);
+  num(P.x, P.y - 24, 'VEILED', '#c3b0ff'); Sfx.play('clone');
+}
+function endVeil() {
+  if (G.veilT <= 0) return;
+  G.veilT = 0; const P = G.player;
+  burst(P.x, P.y - 8, '#8e6cff', 12, 70, .4);
 }
 /* ---------------- Blessings (buff cards) ---------------- */
 // After every cleared room (waves 1-14) three cards are dealt; you keep one for the rest of the run,
@@ -1669,6 +1794,10 @@ const ICONS = {
   shield: ['aaaaaaaaa', 'aaaabaaaa', 'aaaabaaaa', 'abbbbbbba', 'aaaabaaaa', '.aaabaaa.', '.aaaaaaa.', '..aaaaa..', '....a....'],
   skull: ['..aaaaa..', '.aaaaaaa.', 'aaaaaaaaa', 'abbaaabba', 'abbaaabba', 'aaaa.aaaa', '.aaaaaaa.', '..a.a.a..', '..aaaaa..'],
   fang: ['aaaaaaaaa', '.aa.a.aa.', '.a..a..a.', '.a.....a.', '.........', '....b....', '...bbb...', '...bbb...', '....b....'],
+  burst: ['a...a...a', '.a.....a.', '...bbb...', '..b...b..', 'aab.a.baa', '..b...b..', '...bbb...', '.a.....a.', 'a...a...a'],
+  rend: ['........b', '......bba', '.....bba.', '....bba..', '...bba...', '..bba....', '.bba.....', 'bba......', 'a........'],
+  twin: ['.aa...bb.', '.aa...bb.', 'aaaa.bbbb', 'a.aa.bb.b', '.aa...bb.', '.aa...bb.', '.a.a.b.b.', '.a.a.b.b.', '.........'],
+  veil: ['..aaaaa..', '.aaaaaaa.', 'aab.a.baa', 'aaaaaaaaa', 'aaaaaaaaa', 'aaaaaaaaa', 'aaaaaaaaa', 'a.aa.aa.a', '.........'],
   flame: ['....a....', '...aa....', '...aaa.a.', '..aaaa.a.', '.aaabaaa.', '.aabbbaa.', 'aaabbbaaa', '.aabbbaa.', '..aaaaa..'],
   burst: ['....a....', '.a..a..a.', '..a.a.a..', '...aba...', 'aaabbbaaa', '...aba...', '..a.a.a..', '.a..a..a.', '....a....'],
   twin: ['.aa...bb.', '.aa...bb.', 'aaaa.bbbb', 'aaaa.bbbb', '.aa...bb.', '.aa...bb.', '.a.a.b.b.', '.a.a.b.b.', '.........'],
@@ -1681,6 +1810,7 @@ function drawIcon(cvs, name, pal) {
   for (let y = -1; y <= 9; y++) for (let x = -1; x <= 9; x++) if (!on(x, y) && (on(x - 1, y) || on(x + 1, y) || on(x, y - 1) || on(x, y + 1))) g.fillRect(x + 1, y + 1, 1, 1);
   for (let y = 0; y < 9; y++) for (let x = 0; x < 9; x++) if (on(x, y)) { g.fillStyle = rows[y][x] === 'b' ? pal[1] : pal[0]; g.fillRect(x + 1, y + 1, 1, 1); }
 }
+for (const m of MOVES) drawIcon($(m.el).querySelector('canvas'), m.icon, m.pal);
 function bv(id) { return (G && G.buffs && G.buffs[id]) || 0; }
 function rebuildBuffs() {
   G.buffs = {};
@@ -1782,7 +1912,7 @@ function deny(id) {
 }
 function updatePlayer(dt) {
   const P = G.player;
-  P.rollCd -= dt; P.parryCd -= dt; P.inv -= dt; P.flash -= dt; P.comboWindow -= dt; P.atkCd -= dt; P.st += dt;
+  P.rollCd -= dt; P.rendCd -= dt; P.parryCd -= dt; P.inv -= dt; P.flash -= dt; P.comboWindow -= dt; P.atkCd -= dt; P.st += dt;
   P.x += P.kx * dt; P.y += P.ky * dt; const kd = Math.max(0, 1 - 10 * dt); P.kx *= kd; P.ky *= kd;
   if (P.state === 'dead') return;
   const on = controlsOn();
@@ -1818,6 +1948,13 @@ function updatePlayer(dt) {
     if (P.st >= ROLL_T) { P.state = 'idle'; P.rollCd = rollCdMax(); }
   } else if (P.state === 'parry') {
     if (P.st >= PARRY_TOTAL) { P.state = 'idle'; P.parryCd = PARRY_CD; }
+  } else if (P.state === 'rend') {
+    const sp = REND_DIST / REND_T;
+    P.x += Math.cos(P.rendDir) * sp * dt; P.y += Math.sin(P.rendDir) * sp * dt; P.moving = true; P.walk += dt * 16;
+    P.ghostT -= dt;
+    if (P.ghostT <= 0) { P.ghostT = .03; G.fx.push({ type: 'ghost', e: { kind: 'player', x: P.x, y: P.y, face: P.face, walk: P.walk, moving: true }, t: 0, dur: .2 }); }
+    rendHits(P);
+    if (P.st >= REND_T) endRend(P);
   }
   if (!on) return;
   if ((pressed.Mouse0 || keys.Mouse0) && (P.state === 'idle' || P.state === 'move') && P.atkCd <= 0) startAttack(P.comboWindow > 0 ? (P.lastCombo + 1) % 3 : 0);
@@ -1826,11 +1963,13 @@ function updatePlayer(dt) {
     P.state = 'parry'; P.st = 0; Sfx.play('guard');
   }
   if ((pressed.Space || pressed.KeyX) && P.state !== 'roll' && P.rollCd <= 0) {
-    P.state = 'roll'; P.st = 0; P.rollDir = len ? Math.atan2(my, mx) : P.face; P.face = P.rollDir; P.dodgeShown = false; P.ghostT = 0;
+    P.state = 'roll'; P.st = 0; P.rollAt = G.time; P.rollDir = len ? Math.atan2(my, mx) : P.face; P.face = P.rollDir; P.dodgeShown = false; P.ghostT = 0;
     Sfx.play('roll'); burst(P.x, P.y, '#2a2638', 5, 30, .3);
   }
   if (pressed.KeyE) tryBlast();
   if (pressed.KeyR) tryClone();
+  if (pressed.KeyC) tryRend();
+  if (pressed.KeyV) tryVeil();
   if (pressed.Digit1 || pressed.Numpad1) tryUlt();
   // ultimate aura: shadow flames rising off the body
   if (G.ultT > 0 && G.parts.length < 900) for (let i = 0; i < 2; i++) if (Math.random() < .8) G.parts.push({ x: P.x + rnd(-5, 5), y: P.y - rnd(0, 14), vx: rnd(-3, 3), vy: rnd(-34, -18), life: rnd(.35, .55), max: .55, col: ULT_FLAME[Math.floor(Math.random() * 3)], size: 2, shrink: true });
@@ -1842,7 +1981,7 @@ function playerDie() {
   G.lives--; G.deaths++;
   burst(P.x, P.y - 8, '#000', 40, 90, 1, 2, 30); burst(P.x, P.y - 8, '#8e6cff', 16, 70, .8);
   G.allies.forEach(a => { if (!a.dead) { a.dead = true; burst(a.x, a.y - 7, '#8e6cff', 12, 60, .5); } });
-  shake(7); G.slow = .8; Sfx.play('lifeLost');
+  shake(7); G.slow = .8; G.veilT = 0; Sfx.play('lifeLost');
   endUlt(true); G.ult = G.waveUlt; // dying rewinds the ultimate to how it was when the wave began
   if (G.lives > 0) writeSave({ wave: G.wave, lives: G.lives, energy: Math.floor(G.waveEnergy), ult: Math.floor(G.waveUlt) });
   else writeSave(null);
@@ -1860,8 +1999,9 @@ function afterDeath() {
 /* ---------------- Enemies ---------------- */
 function pickTarget(e) {
   const P = G.player, pAlive = P.state !== 'dead';
-  if (e.kind === 'rogue') return pAlive ? P : null;
-  let best = pAlive ? P : null, bd = pAlive ? dist(e, P) : 1e9;
+  const seen = pAlive && G.veilT <= 0;
+  if (e.kind === 'rogue') return seen ? P : null;
+  let best = seen ? P : null, bd = seen ? dist(e, P) : 1e9;
   for (const a of G.allies) if (!a.dead && !a.scripted) { const d = dist(e, a); if (d < bd) { bd = d; best = a; } }
   return best;
 }
@@ -2005,7 +2145,7 @@ function beginBoss(x, y, retry) {
   const P = G.player;
   loadRoom(THRONE_ROOM);
   G.wave = 16; G.state = 'boss'; G.stateT = 0;
-  G.allies = []; G.proj = []; G.circles = []; G.enemies = []; G.orbs = []; G.bossOrbs = 0;
+  G.allies = []; G.proj = []; G.circles = []; G.hazards = []; G.veilT = 0; G.enemies = []; G.orbs = []; G.bossOrbs = 0;
   const b = makeBoss(x, y); G.enemies.push(b); G.boss = b;
   b.face = Math.atan2(P.y - y, P.x - x);
   G.glitch = { state: 'quiet', t: 6, tick: 0, rogue: null };
@@ -2026,25 +2166,28 @@ function enterPhase(b, n) {
   const a = Math.atan2(P.y - b.y, P.x - b.x); P.kx += Math.cos(a) * 240; P.ky += Math.sin(a) * 240;
   G.fx.push({ type: 'ring', x: b.x, y: b.y - 8, r0: 6, r1: 90, t: 0, dur: .5, col: '#ff2a2a' });
   burst(b.x, b.y - 10, '#000', 40, 120, .8, 2); burst(b.x, b.y - 10, '#ff2a2a', 16, 90, .6);
-  showBanner(n === 2 ? 'It learns your moves' : 'It wants the crown', n === 2 ? 'The Betrayer now dashes at range' : 'Your clone power glitches faster', 2, 'boss');
+  showBanner(n === 2 ? 'It learns your moves' : 'It wants the crown', n === 2 ? 'It dashes and sends shadow waves' : 'It splits into shadow copies', 2, 'boss');
   shake(7); Sfx.play('roar');
   if (G.glitch && G.glitch.state === 'quiet') G.glitch.t = Math.min(G.glitch.t, 2.5);
 }
 function updBoss(b, dt) {
   const P = G.player, ph = b.phase;
-  b.st += dt; b.flash -= dt; b.cd -= dt; b.blastCd -= dt; b.dashCd -= dt; b.rollCd -= dt;
+  b.st += dt; b.flash -= dt; b.cd -= dt; b.blastCd -= dt; b.dashCd -= dt; b.rollCd -= dt; b.waveCd -= dt; b.copyCd -= dt;
   b.x += b.kx * dt; b.y += b.ky * dt; const kd = Math.max(0, 1 - 10 * dt); b.kx *= kd; b.ky *= kd;
   b.moving = false; b.tele = false;
   const alive = P.state !== 'dead';
   const dx = P.x - b.x, dy = P.y - b.y, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
   switch (b.state) {
     case 'chase': {
-      if (!alive) break;
+      // the boss is only blinded for the first moment of a veil
+      if (!alive || G.veilT > VEIL_T - VEIL_BOSS_BLIND) break;
       b.face = turnToward(b.face, a, 9 * dt);
       if (P.state === 'attack' && P.st <= dt * 1.5 && d < 38 && b.rollCd <= 0 && Math.random() < .2 + .1 * ph) {
         b.rollCd = 2.2 - ph * .3; b.rollDir = a + Math.PI + (Math.random() < .5 ? 1 : -1) * 1.1; setState(b, 'roll'); Sfx.play('roll'); break;
       }
       if (d < 48 && b.blastCd <= 0) { setState(b, 'blastWind'); Sfx.play('cast'); break; }
+      if (ph === 3 && d > 30 && b.copyCd <= 0) { setState(b, 'summon'); Sfx.play('glitch'); break; }
+      if (ph >= 2 && d > 40 && d < 150 && b.waveCd <= 0) { b.aim = a; setState(b, 'waveWind'); Sfx.play('cast'); break; }
       if (ph >= 2 && d > 85 && b.dashCd <= 0) { b.aim = a; setState(b, 'dashWind'); break; }
       if (d < 30 && b.cd <= 0) { b.hitIdx = -1; b.aim = a; setState(b, 'combo'); break; }
       if (d > 22) { const sp = [70, 80, 92][ph - 1]; b.x += Math.cos(a) * sp * dt; b.y += Math.sin(a) * sp * dt; b.moving = true; b.walk += dt * 9; }
@@ -2059,7 +2202,7 @@ function updBoss(b, dt) {
       if (b.hitIdx !== i && local >= pre) {
         b.hitIdx = i;
         slashFx(b, b.face, i % 2 ? -1 : 1, i === 2, 'rogue'); Sfx.play(i === 2 ? 'heavy' : 'slash');
-        if (alive && d <= b.r + P.r + 17 && Math.abs(angDiff(b.face, a)) < 1.15) hurtTarget(P, i === 2 ? 16 : 10, b.x, b.y, i === 2 ? 200 : 100, b);
+        if (alive && d <= b.r + P.r + 17 && Math.abs(angDiff(b.face, a)) < 1.15) hurtTarget(P, (i === 2 ? 16 : 10) * b.dm, b.x, b.y, i === 2 ? 200 : 100, b);
       }
       break;
     }
@@ -2068,7 +2211,10 @@ function updBoss(b, dt) {
       if (b.st >= BOSS_BLAST_WIND[ph - 1]) {
         G.fx.push({ type: 'ring', x: b.x, y: b.y - 6, r0: 6, r1: 64, t: 0, dur: .35, col: '#ff2a2a' });
         burst(b.x, b.y - 8, '#000', 30, 160, .5); burst(b.x, b.y - 8, '#ff2a2a', 12, 120, .4);
-        if (alive && d < 62 + P.r) hurtTarget(P, 16, b.x, b.y, 260);
+        if (alive && d < 62 + P.r) {
+          if (P.state === 'roll' || G.time - (P.rollAt ?? -9) < BOSS_BLAST_DODGE) { num(P.x, P.y - 22, 'DODGE', '#c3b0ff'); burst(P.x, P.y - 6, '#8e6cff', 8, 50, .3); }
+          else hurtTarget(P, 16 * b.dm, b.x, b.y, 260);
+        }
         b.blastCd = [7, 5.5, 4.2][ph - 1]; b.recT = .5; setState(b, 'recover'); Sfx.play('blast'); shake(5);
       }
       break;
@@ -2077,8 +2223,32 @@ function updBoss(b, dt) {
     case 'dash': {
       b.x += Math.cos(b.aim) * 330 * dt; b.y += Math.sin(b.aim) * 330 * dt; b.moving = true; b.walk += dt * 20;
       if (Math.random() < .8) G.fx.push({ type: 'ghost', e: { kind: 'boss', x: b.x, y: b.y, face: b.face, walk: b.walk, moving: true, scale: b.scale }, t: 0, dur: .25, red: true });
-      if (!b.dashHit && alive && d < b.r + P.r + 4) { b.dashHit = true; hurtTarget(P, 14, b.x, b.y, 200); }
+      if (!b.dashHit && alive && d < b.r + P.r + 4) { b.dashHit = true; hurtTarget(P, 14 * b.dm, b.x, b.y, 200); }
       if (b.st >= .38) { b.recT = .6; b.dashCd = [99, 4.5, 3.4][ph - 1]; setState(b, 'recover'); }
+      break;
+    }
+    // phase 2+: a shadow wave rolls along the floor (three in a fan in phase 3); roll through it or step aside
+    case 'waveWind': {
+      b.tele = true; if (alive) { b.aim = turnToward(b.aim, a, 3 * dt); b.face = b.aim; }
+      if (b.st >= BOSS_WAVE_WIND) {
+        for (const off of ph === 3 ? [-.38, 0, .38] : [0]) G.hazards.push({ type: 'wave', x: b.x + Math.cos(b.aim + off) * 8, y: b.y + Math.sin(b.aim + off) * 8, a: b.aim + off, t: 0, dur: 1.4, dmg: 14 * b.dm });
+        burst(b.x, b.y, '#000', 14, 90, .4); burst(b.x, b.y, '#ff2a2a', 6, 70, .3);
+        b.waveCd = [99, 5, 4.5][ph - 1]; b.recT = .45; setState(b, 'recover'); Sfx.play('dash'); shake(3);
+      }
+      break;
+    }
+    // phase 3: two shadow copies appear on either side of you, lock on, then dash through
+    case 'summon': {
+      b.tele = true;
+      if (b.st >= .5) {
+        const t0 = Math.random() * TAU;
+        for (const t of [t0, t0 + Math.PI]) {
+          const x = clamp(P.x + Math.cos(t) * 72, ARENA.x0 + 8, ARENA.x1 - 8), y = clamp(P.y + Math.sin(t) * 60, ARENA.y0 + 8, ARENA.y1 - 4);
+          G.hazards.push({ type: 'copy', x, y, a: Math.atan2(P.y - y, P.x - x), t: 0, hit: false, dmg: 12 * b.dm, walk: 0 });
+          burst(x, y - 8, '#ff2a2a', 10, 60, .4); burst(x, y - 8, '#000', 12, 60, .4);
+        }
+        b.copyCd = 8; b.recT = .4; setState(b, 'recover'); Sfx.play('rogue');
+      }
       break;
     }
     case 'roll': {
@@ -2132,7 +2302,7 @@ function bossDefeated(b) {
 /* ---------------- Cutscenes ---------------- */
 function startBetrayal() {
   const P = G.player;
-  G.state = 'cutscene'; G.stateT = 0; G.proj = []; G.circles = [];
+  G.state = 'cutscene'; G.stateT = 0; G.proj = []; G.circles = []; G.hazards = [];
   P.state = 'idle'; P.kx = P.ky = 0;
   let a = G.allies.find(x => !x.dead);
   const spawned = !a;
@@ -2197,7 +2367,7 @@ function updCoronation(dt) {
 /* ---------------- Main update ---------------- */
 const DOOR_FADE = .45;
 function waveClear() {
-  G.proj = []; G.circles = [];
+  G.proj = []; G.circles = []; G.hazards = [];
   endUlt(); Sfx.play('clear');
   // waves 1-14 deal three blessing cards first; the door opens once one is picked
   if (G.wave < 15) { showCards(); return; }
@@ -2221,10 +2391,11 @@ function update(dt) {
   G.flashRed -= dt;
   updatePlayer(dt);
   G.flashUlt -= dt; G.mageLock -= dt;
+  if (G.veilT > 0) { G.veilT -= dt; if (G.veilT <= 0) endVeil(); }
   if (G.ultT > 0 && ['fight', 'boss'].includes(G.state)) { G.ultT -= dt; if (G.ultT <= 0) endUlt(); }
   for (const e of G.enemies) if (!e.dead) updEnemy(e, dt);
   for (const a of G.allies) if (!a.dead) updAlly(a, dt);
-  updProj(dt); updCircles(dt); updOrbs(dt); resolve();
+  updProj(dt); updCircles(dt); updHazards(dt); updOrbs(dt); resolve();
   G.enemies = G.enemies.filter(e => !e.dead);
   G.allies = G.allies.filter(a => !a.dead);
   updParts(dt); ambient(dt);
@@ -2233,6 +2404,7 @@ function update(dt) {
   switch (G.state) {
     case 'intro': if (G.stateT >= 1.6) { G.state = 'fight'; G.stateT = 0; } break;
     case 'fight': {
+      if (G.stateT >= .9) checkUnlock();
       const cap = 4 + Math.floor(G.wave / 2);
       G.spawnT -= dt;
       if (G.spawnQ.length && G.spawnT <= 0 && G.enemies.length < cap) { spawnFromGate(G.spawnQ.shift()); G.spawnT = Math.max(.5, 1.4 - G.wave * .05); }
@@ -2298,6 +2470,36 @@ function updCircles(dt) {
     }
   }
   G.circles = G.circles.filter(c => !c.dead);
+}
+// boss hazards: floor shadow waves and the shadow copies that dash through you
+const WAVE_SPD = 160, COPY_LOCK = .45, COPY_GO = .75, COPY_END = 1.13, COPY_FADE = 1.45;
+function updHazards(dt) {
+  for (const h of G.hazards) {
+    h.t += dt;
+    if (h.type === 'wave') {
+      h.x += Math.cos(h.a) * WAVE_SPD * dt; h.y += Math.sin(h.a) * WAVE_SPD * dt;
+      if (h.t >= h.dur || h.x < ARENA.x0 - 6 || h.x > ARENA.x1 + 6 || h.y < ARENA.y0 - 6 || h.y > ARENA.y1 + 6) { h.dead = true; continue; }
+      if (Math.random() < .7) G.parts.push({ x: h.x + rnd(-6, 6), y: h.y + rnd(-2, 2), vx: rnd(-8, 8), vy: rnd(-24, -8), life: .4, max: .4, col: Math.random() < .3 ? '#ff2a2a' : '#0a0710', size: 1 });
+      for (const t of enemyTargets()) {
+        if (h.hit === t || Math.hypot(t.x - h.x, (t.y - h.y) * 1.3) > 9 + t.r) continue;
+        if (hurtTarget(t, h.dmg, h.x - Math.cos(h.a) * 10, h.y - Math.sin(h.a) * 10, 160)) h.hit = t;
+      }
+    } else if (h.type === 'copy') {
+      const P = G.player;
+      if (h.t < COPY_LOCK && P.state !== 'dead') h.a = turnToward(h.a, Math.atan2(P.y - h.y, P.x - h.x), 8 * dt);
+      const dashing = h.t >= COPY_GO && h.t < COPY_END;
+      if (dashing) {
+        h.x += Math.cos(h.a) * 300 * dt; h.y += Math.sin(h.a) * 300 * dt; h.walk += dt * 20;
+        h.x = clamp(h.x, ARENA.x0 + 4, ARENA.x1 - 4); h.y = clamp(h.y, ARENA.y0 + 4, ARENA.y1 - 2);
+        for (const t of enemyTargets()) if (!h.hit && Math.hypot(t.x - h.x, t.y - h.y) < t.r + 7) { if (hurtTarget(t, h.dmg, h.x, h.y, 180)) h.hit = true; }
+      }
+      if (h.t >= COPY_FADE) { h.dead = true; burst(h.x, h.y - 8, '#000', 10, 50, .4); continue; }
+      h.alpha = h.t < .2 ? h.t / .2 : h.t > COPY_END ? 1 - (h.t - COPY_END) / (COPY_FADE - COPY_END) : 1;
+      h.e = { kind: 'boss', x: h.x, y: h.y, face: h.a, walk: h.walk, moving: dashing, scale: 1.15 };
+      if (dashing) G.fx.push({ type: 'ghost', e: { ...h.e }, t: 0, dur: .25, red: true });
+    }
+  }
+  G.hazards = G.hazards.filter(h => !h.dead);
 }
 function updParts(dt) {
   for (const p of G.parts) { p.x += p.vx * dt; p.y += p.vy * dt; const k = Math.max(0, 1 - 3 * dt); p.vx *= k; p.vy *= k; p.life -= dt; }
@@ -2470,6 +2672,15 @@ function drawWeapon(e) {
     if (e.state === 'windup') { ctx.globalAlpha = .35; ctx.fillRect(sx - 2, y - 23, 5, 5); ctx.globalAlpha = 1; }
   }
 }
+// the rending slash leaves a long ink cut along its path that thins out and fades
+function drawRend(f) {
+  const k = f.t / f.dur, w = Math.max(1, Math.round(3 * (1 - k)));
+  ctx.globalAlpha = 1 - k;
+  ctx.strokeStyle = '#0a0710'; ctx.lineWidth = w + 2; ctx.beginPath(); ctx.moveTo(f.x0, f.y0); ctx.lineTo(f.x1, f.y1); ctx.stroke();
+  ctx.strokeStyle = '#8e6cff'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(f.x0, f.y0); ctx.lineTo(f.x1, f.y1); ctx.stroke();
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(f.x0 + (f.x1 - f.x0) * k, f.y0 + (f.y1 - f.y0) * k); ctx.lineTo(f.x1, f.y1); ctx.stroke();
+  ctx.globalAlpha = 1; ctx.lineWidth = 1;
+}
 function drawEntity(e) {
   const s = e.scale || 1;
   ctx.fillStyle = 'rgba(5,4,12,.38)';
@@ -2477,6 +2688,7 @@ function drawEntity(e) {
   const back = dirOf(e.face) === 'u';
   let alpha = e.alpha == null ? 1 : e.alpha;
   if (e.kind === 'player' && e.inv > 0 && e.state !== 'roll' && Math.floor(G.time * 20) % 2) alpha *= .45;
+  if (e.kind === 'player' && G.veilT > 0) alpha *= .28 + .1 * Math.sin(G.time * 9);
   if (e.kind === 'clone' && !e.scripted && e.life < 2 && Math.floor(G.time * 12) % 2) alpha *= .4;
   ctx.globalAlpha = alpha;
   if (back) drawWeapon(e);
@@ -2658,9 +2870,11 @@ function render() {
   for (const e of G.enemies) if (!e.dead) list.push({ y: e.y, e });
   for (const a of G.allies) if (!a.dead) list.push({ y: a.y, e: a });
   for (const f of G.fx) if (f.type === 'ghost') list.push({ y: f.e.y - .1, ghost: f });
+  for (const h of G.hazards) if (h.type === 'copy' && h.e) list.push({ y: h.y, copy: h });
   list.sort((a, b2) => a.y - b2.y);
   for (const it of list) {
     if (it.o) drawObstacle(it.o);
+    else if (it.copy) { ctx.globalAlpha = .85 * it.copy.alpha; drawFigure(it.copy.e, 0, 0, '#2a0508'); ctx.globalAlpha = 1; }
     else if (it.ghost) { const f = it.ghost; ctx.globalAlpha = .45 * (1 - f.t / f.dur); drawFigure(f.e, 0, 0, f.red ? '#7a0d12' : '#5b46a8'); ctx.globalAlpha = 1; }
     else drawEntity(it.e);
   }
@@ -2706,9 +2920,27 @@ function render() {
       ctx.beginPath(); ctx.ellipse(b.x, b.y, 62, 62 * .7, 0, 0, TAU); ctx.stroke();
       ctx.beginPath(); ctx.ellipse(b.x, b.y, 62 * (1 - k) + 6, (62 * (1 - k) + 6) * .7, 0, 0, TAU); ctx.stroke();
     }
+    if (b.state === 'waveWind') {
+      ctx.fillStyle = Math.floor(G.time * 16) % 2 ? '#ff2a2a' : '#7a0d12';
+      for (const off of b.phase === 3 ? [-.38, 0, .38] : [0]) for (let i = 10; i < 70; i += 6) ctx.fillRect(Math.round(b.x + Math.cos(b.aim + off) * i), Math.round(b.y + Math.sin(b.aim + off) * i), 2, 1);
+    }
     if (b.state === 'dashWind') {
       ctx.fillStyle = Math.floor(G.time * 16) % 2 ? '#ff2a2a' : '#ff8a6a';
       for (let i = 6; i < 125; i += 4) ctx.fillRect(Math.round(b.x + Math.cos(b.aim) * i), Math.round(b.y - 4 + Math.sin(b.aim) * i), 2, 1);
+    }
+  }
+  for (const h of G.hazards) {
+    if (h.type === 'wave') {
+      // a low crescent of shadow with a red crest, bowed in its travel direction
+      const c = Math.cos(h.a), s = Math.sin(h.a);
+      for (let i = -7; i <= 7; i++) {
+        const bow = (1 - (i / 7) ** 2) * 4, x = h.x - s * i + c * bow, y = h.y + (c * i + s * bow) * .7;
+        ctx.fillStyle = '#0a0710'; ctx.fillRect(Math.round(x) - 1, Math.round(y) - 2, 3, 3);
+        ctx.fillStyle = Math.floor(G.time * 20 + i) % 3 ? '#ff2a2a' : '#ff8a6a'; ctx.fillRect(Math.round(x + c * 2), Math.round(y - 2 + s), 1, 1);
+      }
+    } else if (h.type === 'copy' && h.t >= COPY_LOCK && h.t < COPY_GO) {
+      ctx.fillStyle = Math.floor(G.time * 16) % 2 ? '#fff3c4' : '#ff3030';
+      for (let i = 6; i < 115; i += 4) ctx.fillRect(Math.round(h.x + Math.cos(h.a) * i), Math.round(h.y - 4 + Math.sin(h.a) * i), 2, 1);
     }
   }
   for (const o of G.orbs) drawOrb(o);
@@ -2729,7 +2961,7 @@ function render() {
     ctx.globalAlpha = 1;
   }
   for (const f of G.fx) {
-    if (f.type === 'slash') drawSlash(f); else if (f.type === 'impact') drawImpact(f); else if (f.type === 'ring' && !f.flat) drawRing(f);
+    if (f.type === 'slash') drawSlash(f); else if (f.type === 'impact') drawImpact(f); else if (f.type === 'rend') drawRend(f); else if (f.type === 'ring' && !f.flat) drawRing(f);
     else if (f.type === 'glint') { const k = 1 - Math.abs(f.t / f.dur * 2 - 1), L = Math.round(k * 3); ctx.fillStyle = '#fff3c4'; ctx.fillRect(f.x - L, f.y, L * 2 + 1, 1); ctx.fillRect(f.x, f.y - L, 1, L * 2 + 1); }
   }
   // particles
@@ -2825,18 +3057,34 @@ function updateHud() {
   $('skParry').classList.toggle('ready', parryReady);
   setWidth($('parryProg'), 'pp', parryReady ? 100 : P.state === 'parry' ? 0 : (1 - P.parryCd / PARRY_CD) * 100);
   setWidth($('rollProg'), 'rp', rollReady ? 100 : P.state === 'roll' ? 0 : (1 - P.rollCd / rollCdMax()) * 100);
-  $('skE').classList.toggle('ready', P.energy >= blastCost());
-  setWidth($('eProg'), 'ep', P.energy / blastCost() * 100); setText($('eLabel'), 'el', 'Blast ' + blastCost());
+  updMoveBar(P);
+}
+// bottom bar: dim when locked or short of energy, a dark overlay for cooldowns, a bright frame while a move is running
+function setH(el, key, pct) { const v = clamp(pct, 0, 100).toFixed(1) + '%'; if (cache[key] !== v) { cache[key] = v; el.style.height = v; } }
+function updMoveBar(P) {
+  setWidth($('barEn'), 'ben', P.energy);
+  const ally = G.allies.find(a => !a.dead && !a.scripted);
   const corrupt = G.wave >= 16 && (G.state === 'boss' || G.state === 'dying');
   const glitching = corrupt && G.glitch && G.glitch.state === 'glitch';
+  const st = {
+    blast: { ok: P.energy >= blastCost(), cd: 0, on: false },
+    rend: { ok: P.energy >= REND_COST && P.rendCd <= 0, cd: P.state === 'rend' ? 100 : P.rendCd / REND_CD * 100, on: P.state === 'rend' },
+    clone: { ok: !corrupt && !ally && P.energy >= 100, cd: ally ? 100 - ally.life / cloneLife() * 100 : 0, on: !!ally },
+    veil: { ok: P.energy >= VEIL_COST && G.veilT <= 0, cd: G.veilT > 0 ? 100 - G.veilT / VEIL_T * 100 : 0, on: G.veilT > 0 },
+  };
+  for (const m of MOVES) {
+    const el = $(m.el), s = st[m.id], lock = !moveUnlocked(m.id), k = m.el;
+    if (cache[k + 'lk'] !== lock) { cache[k + 'lk'] = lock; el.classList.toggle('lockd', lock); }
+    el.classList.toggle('ready', !lock && s.ok && !s.on);
+    el.classList.toggle('active', !lock && s.on);
+    setH($(k[2].toLowerCase() + 'Cd'), k + 'cd', lock ? 0 : s.cd);
+  }
+  setText($('eCost'), 'ec', '' + blastCost());
   const sk = $('skR');
-  sk.classList.toggle('ready', !corrupt && P.energy >= 100 && !G.allies.some(a => !a.dead));
   sk.classList.toggle('corrupt', corrupt);
   sk.classList.toggle('glitch', !!glitching);
-  if (glitching) { if (Math.random() < .3) $('rLabel').textContent = GLITCH_TXT[Math.floor(Math.random() * GLITCH_TXT.length)]; cache.rl = null; }
-  else setText($('rLabel'), 'rl', corrupt ? (G.glitch && G.glitch.state === 'active' ? 'HOSTILE' : 'CORRUPT') : 'Clone 100');
-  const ally = G.allies.find(a => !a.dead && !a.scripted);
-  setWidth($('rProg'), 'rpp', corrupt ? (G.glitch && G.glitch.state === 'glitch' ? 100 - G.glitch.t / 3 * 100 : 0) : ally ? ally.life / cloneLife() * 100 : P.energy);
+  if (glitching) { if (Math.random() < .3) $('rCost').textContent = GLITCH_TXT[Math.floor(Math.random() * GLITCH_TXT.length)]; cache.rc = null; }
+  else setText($('rCost'), 'rc', corrupt ? (G.glitch && G.glitch.state === 'active' ? 'HOSTILE' : 'CORRUPT') : '100');
 }
 function showBanner(t, s, dur, variant) {
   const b = $('banner'); b.className = 'banner ' + (variant || '');
@@ -2901,7 +3149,7 @@ function toggleMute() {
 }
 
 /* ---------------- Input ---------------- */
-const GAME_KEYS = ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyE', 'KeyR', 'KeyX', 'Digit1', 'Numpad1'];
+const GAME_KEYS = ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyE', 'KeyR', 'KeyC', 'KeyV', 'KeyX', 'Digit1', 'Numpad1'];
 addEventListener('keydown', e => {
   const c = e.code;
   if (GAME_KEYS.includes(c) && document.activeElement && document.activeElement.tagName === 'BUTTON' && G && G.state !== 'title' && !G.paused && !['over', 'won'].includes(G.state)) document.activeElement.blur();
@@ -3015,7 +3263,7 @@ function start(data) {
   requestAnimationFrame(frame);
 }
 window.claude?.hot?.snapshot?.(() => ({ run: G && G.state !== 'title' && G.lives > 0 && G.state !== 'won' ? { wave: G.wave, lives: G.lives, energy: Math.floor(G.waveEnergy), ult: Math.floor(G.waveUlt) } : null }));
-window.__silhouette = { get G() { return G; }, showCards, pickCard, dealCards, bv, BUFFS, get ROOM() { return ROOM; }, get OBST() { return OBST; }, loadRoom, ROOM_DEFS, THRONE_ROOM, blocked, parryAlert, TYPES, beginWave, startBetrayal, beginBoss, update, render, startRun, keys, pressed, kill, damageEnemy, Music, Sfx, musicFor, addEnergy, parrySuccess, hurtTarget };
+window.__silhouette = { get G() { return G; }, showCards, pickCard, dealCards, bv, BUFFS, get ROOM() { return ROOM; }, get OBST() { return OBST; }, loadRoom, ROOM_DEFS, THRONE_ROOM, blocked, parryAlert, TYPES, beginWave, startBetrayal, beginBoss, update, render, startRun, keys, pressed, kill, damageEnemy, Music, Sfx, musicFor, addEnergy, parrySuccess, hurtTarget, updateHud };
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 })();
 </script>
