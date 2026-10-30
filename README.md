@@ -90,7 +90,7 @@ The throne room boss grows stronger with every blessing you carry in, so a stack
 | Input | Action |
 | --- | --- |
 | W A S D | Move |
-| Left click | Hold to keep slashing (every 3rd swing is a heavy finisher) |
+| Left click | Slash. Every swing needs its own click; holding the button does nothing more. Click fast to chain the combo (every 3rd swing is a heavy finisher). A click up to 3 frames early, at the end of a roll, a parry or the previous swing, still counts |
 | Right click | Parry when the ! above an enemy turns red (+30 energy, up to +50 for parries in a row without getting hit). A good parry is ready again at once, so you can answer every hit of a combo |
 | Space / X | Roll: you're untouchable mid-tumble, so arrows and strikes miss. Rolling through an attack that would have hit you gives +25 energy (once per roll) |
 | E | Shadow Blast (50 energy) |
@@ -98,7 +98,19 @@ The throne room boss grows stronger with every blessing you carry in, so a stack
 | R | Shadow Clone (100 energy, unlocks on wave 5) |
 | V | Shadow veil (50 energy, unlocks on wave 8) |
 | 1 | Ultimate, once the bar is full (20 kills) |
-| Esc · M | Pause · Sound and music |
+| Esc / P · M | Pause · Sound and music |
+
+These are the default keys. Every action can be moved, so the whole game can be played on the keyboard alone (see Key bindings below).
+
+## Key bindings
+
+Open Key bindings from the title screen or the pause menu (you can change keys mid-run). Every action has two slots, a main and an alternate: move up, down, left and right, slash, parry, roll, Shadow Blast, Rending slash, Shadow Clone, Shadow veil, the ultimate and pause.
+- Pick a slot, then press any key or mouse button (left, middle, right or the side buttons). Esc cancels, and Delete clears the slot.
+- A key that is already in use swaps places: the action it came from gets the slot's old key, so nothing is ever bound twice.
+- Slash and parry work on keys exactly as they do on the mouse. Each key press is one swing, and holding the key does not repeat.
+- Esc always pauses and backs out of menus, and M always turns the sound on and off, so those two can't be rebound.
+- Reset to defaults brings back the keys in the table above.
+- Your bindings are saved in the browser. The HUD key boxes, the controls lists and the in-game tips all show your own keys.
 
 The ! parry warning always draws on top of everything else. If it would land under a HUD panel or another warning, it slides clear and a thin line points back to the enemy it belongs to.
 
@@ -111,4 +123,4 @@ Every 3 kills a green heal orb drops near you. Walk over it for +15 HP and +25 e
 
 The ultimate bar fills as you kill. Press 1 to wreathe yourself in shadow flame for 30 seconds or until the wave ends. Your slashes reach much farther, you move faster, and a 100-point shield absorbs damage before your health does.
 
-Needs a mouse and keyboard. The whole game is the single file `index.html`.
+Plays with a mouse and keyboard, or with the keyboard alone after rebinding slash and parry. The whole game is the single file `index.html`.

@@ -196,6 +196,10 @@ button:active{transform:translate(.2cqw,.2cqw)}
 .menu.stack button.sel::before{opacity:1;transform:none;animation:daggerBob .7s steps(2) infinite}
 .menu button:focus-visible{outline:0}
 @keyframes daggerBob{50%{transform:translateX(.3cqw)}}
+/* single-row menus (game over, victory, key bindings) have no dagger, so a selected main button breathes instead */
+.menu:not(.stack) button.primary.sel{animation:primaryGlow 1.4s steps(4) infinite}
+@keyframes primaryGlow{50%{filter:brightness(1.25);box-shadow:0 0 0 .22cqw #000,inset 0 0 0 .2cqw #fff3c4,.45cqw .45cqw 0 .22cqw #000,0 0 2.6cqw rgba(142,108,255,.7)}}
+@media (prefers-reduced-motion: reduce){ .menu:not(.stack) button.primary.sel{animation:none} }
 .menuhint{margin:0;font-size:max(7px,.8cqw);color:#6f6a84;letter-spacing:.12em}
 /* the title fades in letter by letter, then a violet shimmer runs across it every few seconds */
 #titleH span{display:inline-block;animation:letterIn .45s steps(5) both,shimmer 6s linear infinite;animation-delay:calc(var(--i) * 75ms),calc(1.4s + var(--i) * 90ms)}
@@ -250,6 +254,17 @@ button:active{transform:translate(.2cqw,.2cqw)}
 .ctlrow .fine{flex:1}
 .lookrow{display:flex;gap:3cqw;align-items:flex-start;margin:1.2cqw 0 1.6cqw}
 #lookList button{min-width:31cqw;white-space:nowrap}
+/* key bindings: two columns of rows, each an action and its main + alternate slot */
+#scrKeys .panel{max-width:84cqw;gap:1cqw}
+#scrKeys h2{font-size:5cqw}
+#bindList{display:grid;grid-template-columns:repeat(2,auto);grid-template-rows:repeat(7,auto);grid-auto-flow:column;justify-content:start;gap:.55cqw 3cqw;margin:.4cqw 0}
+.brow{display:flex;align-items:center;gap:.7cqw}
+.brow span{min-width:11cqw;font-size:max(7px,.95cqw);color:var(--dim);letter-spacing:.06em;white-space:nowrap}
+.brow button{min-width:11cqw;padding:.55cqw .9cqw;font-size:max(7px,.95cqw);white-space:nowrap}
+.brow button.empty{color:#5d5872}
+.brow button.listen{color:var(--gold);animation:listen .8s steps(2) infinite}
+@keyframes listen{50%{color:#fff3c4;background:#2e2547}}
+#bindHint.warn{color:var(--gold)}
 #lookCv{display:block;width:20cqw;image-rendering:pixelated;box-shadow:0 0 0 .22cqw #000,inset 0 0 0 .2cqw #3a3550;background:#0c0b14}
 #demo{display:block;width:20cqw;image-rendering:pixelated;box-shadow:0 0 0 .22cqw #000,inset 0 0 0 .2cqw #3a3550;background:#0c0b14}
 .democap{margin:.5cqw 0 0;font-size:max(7px,.78cqw);color:#8e86a8;letter-spacing:.1em;text-align:center}
@@ -331,6 +346,7 @@ button:active{transform:translate(.2cqw,.2cqw)}
           <button id="btnRush">Rush mode · <span id="rushBest">endless</span></button>
           <button id="btnLook">Appearance · <span id="lookName">the classic shade</span></button>
           <button id="btnControls">Controls</button>
+          <button id="btnKeys">Key bindings</button>
         </div>
         <p class="menuhint">W / S or mouse to choose · Enter to select</p>
         <p class="small-note">Silhouette needs a mouse and keyboard. Open it on a computer to play.</p>
@@ -341,21 +357,10 @@ button:active{transform:translate(.2cqw,.2cqw)}
       <div class="panel">
         <p class="eyebrow">How to play</p>
         <h2>Controls</h2>
-        <dl class="keys">
-          <div><dt>W A S D</dt><dd>Move</dd></div>
-          <div><dt>LEFT CLICK</dt><dd>Hold to keep slashing</dd></div>
-          <div><dt>RIGHT CLICK</dt><dd>Parry on red !</dd></div>
-          <div><dt>SPACE / X</dt><dd>Roll</dd></div>
-          <div><dt>E</dt><dd>Blast · 50 energy</dd></div>
-          <div><dt>C</dt><dd>Rending slash · 25 · wave 3</dd></div>
-          <div><dt>R</dt><dd>Clone · 100 · wave 5</dd></div>
-          <div><dt>V</dt><dd>Shadow veil · 50 · wave 8</dd></div>
-          <div><dt>1</dt><dd>Ultimate · 20 kills</dd></div>
-          <div><dt>ESC · M</dt><dd>Pause · Sound</dd></div>
-        </dl>
+        <dl class="keys" id="ctlKeys"></dl>
         <div class="ctlrow">
-          <div><canvas id="demo" width="120" height="64"></canvas><p class="democap">WAIT FOR RED · THEN RIGHT CLICK</p></div>
-          <p class="fine">A yellow ! means an attack is coming. Right click the moment it turns red to parry, counter and earn +30 energy, more for parries in a row; a parry is ready again at once, so you can answer a whole combo. Too early and you still take 70%. Parrying a knight knocks its shield off. Every 3 kills drops a heal orb. 3 lives for the whole run; Rush mode is endless with 1 life.</p>
+          <div><canvas id="demo" width="120" height="64"></canvas><p class="democap" id="demoCap">WAIT FOR RED · THEN RIGHT CLICK</p></div>
+          <p class="fine">A yellow ! means an attack is coming. <span id="parryHow">Right click</span> the moment it turns red to parry, counter and earn +30 energy, more for parries in a row; a parry is ready again at once, so you can answer a whole combo. Too early and you still take 70%. Parrying a knight knocks its shield off. Every 3 kills drops a heal orb. 3 lives for the whole run; Rush mode is endless with 1 life.</p>
         </div>
         <div class="menu stack"><button id="btnBack" class="primary">Back</button></div>
       </div>
@@ -371,26 +376,25 @@ button:active{transform:translate(.2cqw,.2cqw)}
         <div class="menu stack"><button id="btnLookBack" class="primary">Back</button></div>
       </div>
     </section>
+    <section class="screen" id="scrKeys" hidden>
+      <div class="panel">
+        <p class="eyebrow">Play your way · two keys per action</p>
+        <h2>Key bindings</h2>
+        <div class="menu" id="bindList"></div>
+        <p class="menuhint" id="bindHint">Pick a slot, then press a key or mouse button · Esc cancels · Delete clears</p>
+        <div class="menu"><button id="btnKeysBack" class="primary">Back</button><button id="btnKeysReset">Reset to defaults</button></div>
+      </div>
+    </section>
     <section class="screen" id="scrPause" hidden>
       <div class="panel">
         <p class="eyebrow" id="pauseWhere">Wave 1 of 15</p>
         <h2>Paused</h2>
-        <div class="menu">
+        <div class="menu stack">
           <button id="btnResume" class="primary">Resume</button>
+          <button id="btnPauseKeys">Key bindings</button>
           <button id="btnQuit">Quit to title</button>
         </div>
-        <dl class="keys">
-          <div><dt>W A S D</dt><dd>Move</dd></div>
-          <div><dt>LEFT CLICK</dt><dd>Hold to keep slashing</dd></div>
-          <div><dt>RIGHT CLICK</dt><dd>Parry on red !</dd></div>
-          <div><dt>SPACE / X</dt><dd>Roll</dd></div>
-          <div><dt>E</dt><dd>Blast · 50 energy</dd></div>
-          <div><dt>C</dt><dd>Rending slash · 25 · wave 3</dd></div>
-          <div><dt>R</dt><dd>Clone · 100 · wave 5</dd></div>
-          <div><dt>V</dt><dd>Shadow veil · 50 · wave 8</dd></div>
-          <div><dt>1</dt><dd>Ultimate · 20 kills</dd></div>
-          <div><dt>ESC · M</dt><dd>Pause · Sound</dd></div>
-        </dl>
+        <dl class="keys" id="pauseKeys"></dl>
         <p class="fine" id="pauseBuffs"></p>
         <p class="fine" id="pauseSave">Your run is saved at the start of each wave. Quitting keeps it.</p>
       </div>
@@ -1660,14 +1664,15 @@ const WAVES = [null,
   { bandit: 5, spear: 4, archer: 3, knight: 3, mage: 2, sapper: 1 }, { bandit: 5, spear: 4, archer: 4, knight: 3, mage: 3, sapper: 2 }, { bandit: 6, spear: 5, archer: 4, knight: 4, mage: 3, sapper: 2 },
 ];
 const NOTES = {
-  1: 'Right click when the ! turns red to parry', 2: 'Hold left click to keep slashing as you move', 3: '50 energy? Press E to Shadow Blast',
-  4: 'Spearmen join. Their thrust reaches far', 5: 'Full energy? Press R to call your clone', 6: 'Glowing soldiers are elites: tougher, and worth more',
+  1: '{parry} when the ! turns red to parry', 2: '{slash} once for every slash. Be quick to chain the combo', 3: '50 energy? {blast} to Shadow Blast',
+  4: 'Spearmen join. Their thrust reaches far', 5: 'Full energy? {clone} to call your clone', 6: 'Glowing soldiers are elites: tougher, and worth more',
   7: 'Archers. Parry when their ! turns red to send the arrow back', 8: 'The Twin Captains', 9: 'Sappers throw snares. Roll over them or cut them',
   10: 'Knights block from the front. Parry one to knock its shield off', 11: 'The siege thickens', 12: 'Steel, arrows and snares',
   13: 'Mages. Leave the red circles, sidestep the beams', 14: 'Hit a mage before its spell lands to break it', 15: 'The final wave. The throne is waiting',
 };
-// Fast, spammable swings: about 6 slashes a second while the button is held.
-const SWING_MOVE = .65;
+// Fast swings, one per click: clicking quickly gets about 6 slashes a second, and every 3rd is a heavy finisher.
+// a click is remembered for 3 frames at 60 fps
+const SWING_MOVE = .65, CLICK_BUFFER = 3 / 60;
 const ATK = [
   { dur: .14, hitAt: .04, dmg: 8, lunge: 45, range: 23, arc: 1.2 },
   { dur: .14, hitAt: .04, dmg: 8, lunge: 45, range: 23, arc: 1.2 },
@@ -1724,6 +1729,73 @@ function writeSave(o) { if (G && G.rush) return; if (o && o.ult == null && G) o.
 /* ---------------- World ---------------- */
 let G = null;
 const keys = {}, pressed = {};
+
+/* ---------------- Key bindings ---------------- */
+// Every action has a main and an alternate slot. A slot holds a key code ('KeyW') or a mouse button ('Mouse0').
+// Esc (pause, and backing out of menus) and M (sound) stay fixed so there is always a way out.
+const BIND_KEY = 'silhouette.keys';
+const ACTIONS = [
+  { id: 'up', name: 'Move up', def: ['KeyW', 'ArrowUp'] },
+  { id: 'down', name: 'Move down', def: ['KeyS', 'ArrowDown'] },
+  { id: 'left', name: 'Move left', def: ['KeyA', 'ArrowLeft'] },
+  { id: 'right', name: 'Move right', def: ['KeyD', 'ArrowRight'] },
+  { id: 'slash', name: 'Slash', def: ['Mouse0', null] },
+  { id: 'parry', name: 'Parry', def: ['Mouse2', null] },
+  { id: 'roll', name: 'Roll', def: ['Space', 'KeyX'] },
+  { id: 'blast', name: 'Shadow Blast', def: ['KeyE', null] },
+  { id: 'rend', name: 'Rending slash', def: ['KeyC', null] },
+  { id: 'clone', name: 'Shadow Clone', def: ['KeyR', null] },
+  { id: 'veil', name: 'Shadow veil', def: ['KeyV', null] },
+  { id: 'ult', name: 'Ultimate', def: ['Digit1', 'Numpad1'] },
+  { id: 'pause', name: 'Pause', def: ['KeyP', null] },
+];
+const RESERVED = ['Escape', 'KeyM'];
+let BINDS = {};
+function defaultBinds() { return Object.fromEntries(ACTIONS.map(a => [a.id, a.def.slice()])); }
+function loadBinds() {
+  BINDS = defaultBinds();
+  try {
+    const o = JSON.parse(localStorage.getItem(BIND_KEY) || 'null');
+    if (o && typeof o === 'object') for (const a of ACTIONS) {
+      const b = o[a.id];
+      if (Array.isArray(b) && b.length === 2 && b.every(c => c === null || (typeof c === 'string' && c.length < 40 && !RESERVED.includes(c)))) BINDS[a.id] = b.slice();
+    }
+  } catch (e) { }
+}
+function saveBinds() { try { localStorage.setItem(BIND_KEY, JSON.stringify(BINDS)); } catch (e) { } }
+loadBinds();
+const held = a => { const b = BINDS[a]; return !!(b && ((b[0] && keys[b[0]]) || (b[1] && keys[b[1]]))); };
+const hit = a => { const b = BINDS[a]; return !!(b && ((b[0] && pressed[b[0]]) || (b[1] && pressed[b[1]]))); };
+// which action a key or button is bound to, if any
+function actOf(c) { for (const a of ACTIONS) if (BINDS[a.id].includes(c)) return a.id; return null; }
+const KEY_NAMES = {
+  Mouse0: 'Left click', Mouse1: 'Middle click', Mouse2: 'Right click', Mouse3: 'Mouse 4', Mouse4: 'Mouse 5',
+  Space: 'Space', ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right', Enter: 'Enter', NumpadEnter: 'Num Enter',
+  Backspace: 'Backspace', Tab: 'Tab', CapsLock: 'Caps Lock', ShiftLeft: 'L Shift', ShiftRight: 'R Shift', ControlLeft: 'L Ctrl', ControlRight: 'R Ctrl',
+  AltLeft: 'L Alt', AltRight: 'R Alt', MetaLeft: 'L Win', MetaRight: 'R Win', ContextMenu: 'Menu', Delete: 'Delete', Insert: 'Insert', Home: 'Home', End: 'End',
+  PageUp: 'Page Up', PageDown: 'Page Down', Semicolon: ';', Quote: "'", Comma: ',', Period: '.', Slash: '/', Backslash: '\\', BracketLeft: '[', BracketRight: ']',
+  Minus: '-', Equal: '=', Backquote: '`', IntlBackslash: '\\', NumpadAdd: 'Num +', NumpadSubtract: 'Num -', NumpadMultiply: 'Num *', NumpadDivide: 'Num /', NumpadDecimal: 'Num .',
+};
+function keyName(c) {
+  if (!c) return '';
+  if (KEY_NAMES[c]) return KEY_NAMES[c];
+  if (/^Key[A-Z]$/.test(c)) return c.slice(3);
+  if (/^Digit\d$/.test(c)) return c.slice(5);
+  if (/^Numpad\d$/.test(c)) return 'Num ' + c.slice(6);
+  if (/^Mouse\d$/.test(c)) return 'Mouse ' + (+c.slice(5) + 1);
+  return c.replace(/([a-z])([A-Z])/g, '$1 $2');
+}
+// short labels for the HUD key boxes
+function keyShort(c) {
+  return { Mouse0: 'CLICK', Mouse1: 'M-CLICK', Mouse2: 'R-CLICK', Space: 'SPC', Backspace: 'BKSP', CapsLock: 'CAPS', ShiftLeft: 'SHIFT', ShiftRight: 'SHIFT', ControlLeft: 'CTRL', ControlRight: 'CTRL', AltLeft: 'ALT', AltRight: 'ALT', Enter: 'ENT', NumpadEnter: 'ENT', Delete: 'DEL', PageUp: 'PGUP', PageDown: 'PGDN' }[c]
+    || keyName(c).replace('Num ', 'N').replace('Mouse ', 'M').toUpperCase();
+}
+const firstBind = a => BINDS[a][0] || BINDS[a][1];
+// 'E', 'Left click', 'E / Q'
+function bindName(a) { const b = BINDS[a].filter(Boolean); return b.length ? b.map(keyName).join(' / ') : 'unbound'; }
+// the way to say it in a sentence: 'Press E', 'Right click', 'Bind a key'
+function bindVerb(a) { const c = firstBind(a); return !c ? 'Bind a key' : c.startsWith('Mouse') && +c.slice(5) < 3 ? keyName(c) : 'Press ' + keyName(c); }
+function withKeys(s) { return s.replace(/\{(\w+)\}/g, (_, a) => BINDS[a] ? bindVerb(a) : _); }
 
 function makePlayer(x = 200, y = 150) {
   return { kind: 'player', x, y, r: 5, hp: 100, maxHp: 100, energy: 0, face: Math.PI / 2, state: 'idle', st: 0, combo: 0, lastCombo: 0,
@@ -1796,7 +1868,7 @@ function beginWave(n) {
     showBanner('Room ' + n, ROOM.name + (best ? ' · best: room ' + best : ' · how far can you go?'), G.twist ? 1.8 : 2.2, n % RUSH_BOSS_EVERY === 9 ? 'gold' : '');
     Sfx.play('wave');
   } else {
-    showBanner('Wave ' + n, ROOM.name + ' · ' + (NOTES[n] || 'Survive'), G.twist ? 2 : 2.4, n === 15 ? 'gold' : '');
+    showBanner('Wave ' + n, ROOM.name + ' · ' + (NOTES[n] ? withKeys(NOTES[n]) : 'Survive'), G.twist ? 2 : 2.4, n === 15 ? 'gold' : '');
     Sfx.play('wave');
   }
   writeSave({ wave: n, lives: G.lives, energy: Math.floor(P.energy) });
@@ -2490,7 +2562,7 @@ function checkUnlock() {
   if (G.rush || G.unlockSeen >= G.wave) return;
   G.unlockSeen = G.wave;
   const m = MOVES.find(x => x.wave === G.wave && x.wave > 1); if (!m) return;
-  showBanner('New move: ' + m.name, 'Press ' + m.key + ' · ' + MOVE_COST[m.id]() + ' energy · ' + m.hint, 3, 'gold');
+  showBanner('New move: ' + m.name, bindVerb(m.id) + ' · ' + MOVE_COST[m.id]() + ' energy · ' + m.hint, 3, 'gold');
   const el = $(m.el); el.classList.remove('new'); void el.offsetWidth; el.classList.add('new');
   Sfx.play('unlock');
 }
@@ -2616,7 +2688,7 @@ function dealCards(force) {
   return hand;
 }
 function showCards(hand) {
-  G.state = 'pick'; G.stateT = 0; G.hand = hand || dealCards(); G.chosen = -1; G.cardSel = 1;
+  G.state = 'pick'; G.stateT = 0; G.hand = hand || dealCards(); G.chosen = -1; G.cardSel = 1; releaseInput();
   const row = $('cardRow'); row.innerHTML = '';
   $('cardsTitle').textContent = G.rush ? (G.wave % RUSH_BOSS_EVERY === 0 ? (G.bossDown || 'The boss') + ' falls' : 'Room ' + G.wave + ' cleared') : 'Wave ' + G.wave + ' cleared';
   G.hand.forEach((h, i) => {
@@ -2643,7 +2715,7 @@ function pickCard(i) {
   // ignore picks for a moment so a held slash click can't grab a card by accident
   if (G.state !== 'pick' || G.chosen >= 0 || G.stateT < CARD_ARM || !G.hand[i]) return;
   const h = G.hand[i], b = BUFF_BY[h.id], P = G.player, T = TIERS[h.tier];
-  G.chosen = i; G.pickT = 0;
+  G.chosen = i; G.pickT = 0; releaseInput();
   G.picks = (G.picks || []).concat({ id: h.id, tier: h.tier }); rebuildBuffs();
   const before = P.maxHp; applyBuffs(P); if (P.maxHp > before) P.hp += P.maxHp - before;
   if (h.id === 'well') P.energy = Math.min(100, P.energy + b.vals[h.tier]);
@@ -2676,8 +2748,8 @@ function chargeUlt(n) {
 function tryUlt() {
   const P = G.player;
   if (G.ultT > 0) return;
-  // only during a fight, so it can't be wasted in the pause between waves
-  if (G.ult < ULT_KILLS || !['fight', 'boss'].includes(G.state)) { deny('ultMeter'); return; }
+  // during a fight or its intro (the timer only runs once the fight starts), never in the pause between waves
+  if (G.ult < ULT_KILLS || !['intro', 'fight', 'boss'].includes(G.state)) { deny('ultMeter'); return; }
   G.ult = 0; G.ultT = ULT_TIME; G.shield = ULT_SHIELD; P.inv = Math.max(P.inv, .4);
   G.fx.push({ type: 'ring', x: P.x, y: P.y - 5, r0: 4, r1: 72, t: 0, dur: .5, col: '#c9b8ff' });
   G.fx.push({ type: 'ring', x: P.x, y: P.y - 5, r0: 2, r1: 46, t: 0, dur: .3, col: '#ffffff' });
@@ -2697,6 +2769,9 @@ function deny(id) {
 function updatePlayer(dt) {
   const P = G.player;
   P.rollCd -= dt; P.rendCd -= dt; P.parryCd -= dt; P.inv -= dt; P.flash -= dt; P.comboWindow -= dt; P.atkCd -= dt; P.st += dt; P.rootT -= dt;
+  // every swing needs its own click; a click is remembered for CLICK_BUFFER seconds, so one made a moment
+  // early (at the end of a roll, a parry or the previous swing) still lands
+  P.clickT = hit('slash') && controlsOn() ? CLICK_BUFFER : (P.clickT || 0) - dt;
   P.x += P.kx * dt; P.y += P.ky * dt; const kd = Math.max(0, 1 - 10 * dt); P.kx *= kd; P.ky *= kd;
   if (P.state === 'dead') return;
   const on = controlsOn();
@@ -2704,12 +2779,12 @@ function updatePlayer(dt) {
   const rooted = P.rootT > 0;
   let mx = 0, my = 0;
   if (on && rooted) {
-    const fx = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0), fy = (keys.KeyS || keys.ArrowDown ? 1 : 0) - (keys.KeyW || keys.ArrowUp ? 1 : 0);
+    const fx = (held('right') ? 1 : 0) - (held('left') ? 1 : 0), fy = (held('down') ? 1 : 0) - (held('up') ? 1 : 0);
     if ((fx || fy) && (P.state === 'idle' || P.state === 'move')) P.face = Math.atan2(fy, fx);
     if (P.state === 'move') P.state = 'idle';
   } else if (on) {
-    mx = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
-    my = (keys.KeyS || keys.ArrowDown ? 1 : 0) - (keys.KeyW || keys.ArrowUp ? 1 : 0);
+    mx = (held('right') ? 1 : 0) - (held('left') ? 1 : 0);
+    my = (held('down') ? 1 : 0) - (held('up') ? 1 : 0);
   }
   const len = Math.hypot(mx, my); if (len) { mx /= len; my /= len; }
   P.moving = false;
@@ -2718,13 +2793,14 @@ function updatePlayer(dt) {
     if (len) { P.face = Math.atan2(my, mx); P.x += mx * walk * dt; P.y += my * walk * dt; P.moving = true; P.walk += dt * 9; P.state = 'move'; }
     else P.state = 'idle';
   } else if (P.state === 'attack') {
-    // Terraria-style: hold the button to keep swinging, and keep walking while you do.
+    // One click, one swing (holding the button does nothing more); you keep walking while you swing.
     const A = ATK[P.combo];
     if (len) { P.x += mx * walk * SWING_MOVE * dt; P.y += my * walk * SWING_MOVE * dt; P.moving = true; P.walk += dt * 7; P.inDir = Math.atan2(my, mx); }
     else P.inDir = null;
     if (P.st < .06 && !rooted) { P.x += Math.cos(P.face) * A.lunge * dt; P.y += Math.sin(P.face) * A.lunge * dt; }
     if (!P.hitDone && P.st >= A.hitAt) { P.hitDone = true; doPlayerHit(); }
-    if (pressed.Mouse0 || keys.Mouse0) P.comboQueued = true;
+    // a click during a swing queues the next one in the combo
+    if (P.clickT > 0) { P.comboQueued = true; P.clickT = 0; }
     if (P.st >= A.dur) {
       if (P.comboQueued && on) startAttack((P.combo + 1) % 3);
       else { P.state = 'idle'; P.lastCombo = P.combo; P.comboWindow = P.combo < 2 ? .25 : 0; P.atkCd = P.combo === 2 ? .06 : 0; }
@@ -2747,21 +2823,21 @@ function updatePlayer(dt) {
     if (P.st >= REND_T) endRend(P);
   }
   if (!on) return;
-  if ((pressed.Mouse0 || keys.Mouse0) && (P.state === 'idle' || P.state === 'move') && P.atkCd <= 0) startAttack(P.comboWindow > 0 ? (P.lastCombo + 1) % 3 : 0);
+  if (P.clickT > 0 && (P.state === 'idle' || P.state === 'move') && P.atkCd <= 0) { P.clickT = 0; startAttack(P.comboWindow > 0 ? (P.lastCombo + 1) % 3 : 0); }
   // parry can interrupt your own slash, so a red ! mid-combo is still answerable
-  if (pressed.Mouse2 && (P.state === 'idle' || P.state === 'move' || P.state === 'attack') && P.parryCd <= 0) {
+  if (hit('parry') && (P.state === 'idle' || P.state === 'move' || P.state === 'attack') && P.parryCd <= 0) {
     P.state = 'parry'; P.st = 0; Sfx.play('guard');
   }
-  if ((pressed.Space || pressed.KeyX) && rooted) { deny('skRoll'); num(P.x, P.y - 24, 'SNARED', '#d9b26a'); }
-  else if ((pressed.Space || pressed.KeyX) && P.state !== 'roll' && P.rollCd <= 0) {
+  if (hit('roll') && rooted) { deny('skRoll'); num(P.x, P.y - 24, 'SNARED', '#d9b26a'); }
+  else if (hit('roll') && P.state !== 'roll' && P.rollCd <= 0) {
     P.state = 'roll'; P.st = 0; P.rollAt = G.time; P.rollDir = len ? Math.atan2(my, mx) : P.face; P.face = P.rollDir; P.dodgeShown = false; P.ghostT = 0;
     Sfx.play('roll'); burst(P.x, P.y, '#2a2638', 5, 30, .3);
   }
-  if (pressed.KeyE) tryBlast();
-  if (pressed.KeyR) tryClone();
-  if (pressed.KeyC) tryRend();
-  if (pressed.KeyV) tryVeil();
-  if (pressed.Digit1 || pressed.Numpad1) tryUlt();
+  if (hit('blast')) tryBlast();
+  if (hit('clone')) tryClone();
+  if (hit('rend')) tryRend();
+  if (hit('veil')) tryVeil();
+  if (hit('ult')) tryUlt();
   // ultimate aura: shadow flames rising off the body
   if (G.ultT > 0 && G.parts.length < 900) for (let i = 0; i < 2; i++) if (Math.random() < .8) G.parts.push({ x: P.x + rnd(-5, 5), y: P.y - rnd(0, 14), vx: rnd(-3, 3), vy: rnd(-34, -18), life: rnd(.35, .55), max: .55, col: ULT_FLAME[Math.floor(Math.random() * 3)], size: 2, shrink: true });
   if (P.moving && Math.random() < dt * 14) G.parts.push({ x: P.x + rnd(-3, 3), y: P.y - rnd(0, 3), vx: rnd(-6, 6), vy: rnd(-12, -4), life: .45, max: .45, col: 'rgba(40,30,70,.7)', size: 1 });
@@ -3507,7 +3583,7 @@ function startBetrayal() {
 }
 function updCutscene(dt) {
   const cs = G.cs, a = cs.a, P = G.player; cs.t += dt;
-  const adv = pressed.Mouse0 || pressed.Enter || pressed.Space;
+  const adv = pressed.Mouse0 || pressed.Enter || pressed.Space || hit('slash');
   if (cs.step === 0) {
     if (cs.spawned) { a.alpha = Math.min(1, cs.t); if (Math.random() < .4) burst(a.x, a.y - 7, '#8e6cff', 1, 30, .4); }
     const tx = clamp(P.x, 60, 340), ty = P.y > 110 ? P.y - 36 : P.y + 36;
@@ -4796,7 +4872,7 @@ function updateHud() {
   setWidth($('shFill'), 'sh', G.shield / ULT_SHIELD * 100);
   const ultOn = G.ultT > 0, ultReady = !ultOn && G.ult >= ULT_KILLS;
   setWidth($('ultFill'), 'ult', ultOn ? G.ultT / ULT_TIME * 100 : G.ult / ULT_KILLS * 100);
-  setText($('ultText'), 'ultT', ultOn ? 'ULTIMATE ' + Math.ceil(G.ultT) + 's' : ultReady ? 'ULTIMATE READY · PRESS 1' : 'ULTIMATE ' + Math.floor(G.ult) + ' / ' + ULT_KILLS);
+  setText($('ultText'), 'ultT', ultOn ? 'ULTIMATE ' + Math.ceil(G.ultT) + 's' : ultReady ? 'ULTIMATE READY · ' + bindVerb('ult').toUpperCase() : 'ULTIMATE ' + Math.floor(G.ult) + ' / ' + ULT_KILLS);
   $('ultMeter').classList.toggle('ready', ultReady); $('ultMeter').classList.toggle('active', ultOn);  $('hpMeter').classList.toggle('low', P.hp > 0 && P.hp < P.maxHp * .3);
   setWidth($('enFill'), 'en', P.energy);
   setText($('enText'), 'enT', 'ENERGY ' + Math.floor(P.energy));
@@ -4859,7 +4935,7 @@ function showBanner(t, s, dur, variant) {
   b.hidden = false; b.style.animation = 'none'; void b.offsetWidth; b.style.animation = '';
   G.bannerT = dur;
 }
-const SCREENS = ['scrTitle', 'scrControls', 'scrLook', 'scrPause', 'scrOver', 'scrWin'];
+const SCREENS = ['scrTitle', 'scrControls', 'scrLook', 'scrKeys', 'scrPause', 'scrOver', 'scrWin'];
 function showScreen(id) { for (const s of SCREENS) $(s).hidden = s !== id; selectBtn(id ? $(id).querySelector('button:not([hidden])') : null, false); }
 // Menus work with the mouse or W/S + Enter; the selected button carries the dagger cursor.
 function menuButtons() { const s = SCREENS.map($).find(el => !el.hidden); return s ? [...s.querySelectorAll('.menu button:not([hidden])')] : []; }
@@ -4922,25 +4998,46 @@ function toggleMute() {
 }
 
 /* ---------------- Input ---------------- */
-const GAME_KEYS = ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyE', 'KeyR', 'KeyC', 'KeyV', 'KeyX', 'Digit1', 'Numpad1'];
+const GAME_KEYS = ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Digit1', 'Numpad1'];
+const playing = () => G && !['title', 'over', 'won'].includes(G.state) && !G.paused;
+// keys the game owns while you play, so the page never scrolls, tabs away or opens the browser menu
+const gameKey = c => GAME_KEYS.includes(c) || !!actOf(c);
+// the direction a key means in a menu: your bound movement keys first, then W A S D and the arrows
+function menuDir(c) {
+  const a = actOf(c);
+  if (a === 'up' || a === 'down' || a === 'left' || a === 'right') return a;
+  return { KeyW: 'up', ArrowUp: 'up', KeyS: 'down', ArrowDown: 'down', KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right' }[c] || null;
+}
 addEventListener('keydown', e => {
-  const c = e.code;
-  if (GAME_KEYS.includes(c) && document.activeElement && document.activeElement.tagName === 'BUTTON' && G && G.state !== 'title' && !G.paused && !['over', 'won'].includes(G.state)) document.activeElement.blur();
-  if (GAME_KEYS.includes(c) && G && !['title', 'over', 'won'].includes(G.state) && !G.paused) e.preventDefault();
+  // the "1" character always means the ultimate key, whichever physical key a layout puts it on
+  const c = e.key === '1' && e.code !== 'Numpad1' ? 'Digit1' : e.code;
   Sfx.init();
-  if (!keys[c] && !e.repeat) pressed[c] = true;
+  if (listening) { e.preventDefault(); e.stopPropagation(); if (!e.repeat) bindTo(c); return; }
+  if (gameKey(c) && playing()) { e.preventDefault(); if (document.activeElement && document.activeElement.tagName === 'BUTTON') document.activeElement.blur(); }
+  // a fresh (non-repeat) keydown is always a new press, even if a lost key release left the key marked as held
+  if (!e.repeat) pressed[c] = true;
   keys[c] = true;
   if (c === 'KeyM') { toggleMute(); return; }
   if (!G) return;
   if (G.state === 'pick' && !G.paused) {
     const n = { Digit1: 0, Digit2: 1, Digit3: 2, Numpad1: 0, Numpad2: 1, Numpad3: 2 }[c];
     if (n != null) { pickCard(n); delete pressed[c]; return; }
-    if (['KeyA', 'ArrowLeft', 'KeyD', 'ArrowRight'].includes(c) && G.chosen < 0) { G.cardSel = (G.cardSel + (['KeyA', 'ArrowLeft'].includes(c) ? 2 : 1)) % 3; markCard(); Sfx.play('uiMove'); return; }
+    const d = menuDir(c);
+    if ((d === 'left' || d === 'right') && G.chosen < 0) { G.cardSel = (G.cardSel + (d === 'left' ? 2 : 1)) % 3; markCard(); Sfx.play('uiMove'); return; }
     if (c === 'Enter' || c === 'Space') { e.preventDefault(); pickCard(G.cardSel); delete pressed[c]; return; }
   }
-  if (G.paused || ['title', 'over', 'won'].includes(G.state)) {
-    if (['KeyW', 'ArrowUp'].includes(c)) { e.preventDefault(); moveSel(-1); return; }
-    if (['KeyS', 'ArrowDown'].includes(c)) { e.preventDefault(); moveSel(1); return; }
+  const inMenu = G.paused || ['title', 'over', 'won'].includes(G.state);
+  if (inMenu && !$('scrKeys').hidden) {
+    if (c === 'Escape' || c === 'Backspace') { e.preventDefault(); Sfx.play('uiPick'); closeKeys(); return; }
+    if (c === 'Delete') { const b = document.querySelector('#bindList button.sel'); if (b) { e.preventDefault(); setBind(b.dataset.a, +b.dataset.s, null); } return; }
+    const d = menuDir(c);
+    if (d) { e.preventDefault(); moveSelDir(d); }
+    return;
+  }
+  if (inMenu) {
+    const d = menuDir(c);
+    if (d === 'up') { e.preventDefault(); moveSel(-1); return; }
+    if (d === 'down') { e.preventDefault(); moveSel(1); return; }
   }
   if (G.state === 'title') {
     if ((!$('scrControls').hidden || !$('scrLook').hidden) && (c === 'Escape' || c === 'Backspace')) { e.preventDefault(); Sfx.play('uiPick'); showScreen('scrTitle'); return; }
@@ -4948,11 +5045,17 @@ addEventListener('keydown', e => {
     return;
   }
   if (G.state === 'over' || G.state === 'won') { if (c === 'Enter' && document.activeElement?.tagName !== 'BUTTON') { e.preventDefault(); if (G.rush) startRush(); else startRun(null); } return; }
-  if (c === 'Escape' || c === 'KeyP') { if (G.paused) resume(); else pause(); }
+  if (c === 'Escape' || actOf(c) === 'pause') { if (G.paused) resume(); else pause(); }
 });
-addEventListener('keyup', e => { keys[e.code] = false; });
-addEventListener('mouseup', e => { if (e.button === 0) keys.Mouse0 = false; });
-addEventListener('blur', () => { for (const k in keys) keys[k] = false; pause(); });
+addEventListener('keyup', e => {
+  keys[e.code] = false; if (e.key === '1') keys.Digit1 = false;
+  // a lone Alt release would put the browser's menu bar in charge of the keyboard
+  if (gameKey(e.code) && playing()) e.preventDefault();
+});
+addEventListener('mouseup', e => { keys['Mouse' + e.button] = false; if (e.button > 2) e.preventDefault(); });
+// let go of every held key and button (on blur, and whenever the blessing cards come up or one is picked)
+function releaseInput() { for (const k in keys) keys[k] = false; for (const k in pressed) delete pressed[k]; }
+addEventListener('blur', () => { releaseInput(); pause(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
 $('btnStart').addEventListener('click', () => { writeSave(null); startRun(null); });
 $('btnContinue').addEventListener('click', () => startRun(loadSave()));
@@ -4975,6 +5078,111 @@ for (const k of SKINS) {
 }
 $('btnLook').addEventListener('click', () => { look = null; showScreen('scrLook'); markSkins(); selectBtn([...$('lookList').children].find(b => b.dataset.skin === skinId), false); });
 $('btnLookBack').addEventListener('click', () => { showScreen('scrTitle'); selectBtn($('btnLook'), false); });
+
+// Key bindings: pick a slot, then the next key or mouse button lands in it.
+// A key already used elsewhere swaps places with what the slot held, so nothing is ever bound twice.
+let listening = null, keysFrom = 'scrTitle', swallowClick = false;
+for (const a of ACTIONS) {
+  const row = document.createElement('div'); row.className = 'brow';
+  const l = document.createElement('span'); l.textContent = a.name; row.appendChild(l);
+  for (const s of [0, 1]) {
+    const b = document.createElement('button'); b.dataset.a = a.id; b.dataset.s = s;
+    b.addEventListener('click', () => { if (swallowClick) return; listenFor(b); });
+    row.appendChild(b);
+  }
+  $('bindList').appendChild(row);
+}
+function bindHint(t, warn) { $('bindHint').textContent = t || 'Pick a slot, then press a key or mouse button · Esc cancels · Delete clears'; $('bindHint').classList.toggle('warn', !!warn); }
+function markBinds() {
+  for (const b of $('bindList').querySelectorAll('button')) {
+    const c = BINDS[b.dataset.a][+b.dataset.s], on = listening === b;
+    b.textContent = on ? 'press a key…' : c ? keyName(c) : '—';
+    b.classList.toggle('empty', !c && !on); b.classList.toggle('listen', on);
+  }
+}
+function listenFor(b) { listening = b; markBinds(); bindHint('Press a key or mouse button for ' + ACTIONS.find(a => a.id === b.dataset.a).name.toLowerCase() + ' · Esc cancels · Delete clears'); }
+function setBind(id, s, c) {
+  let note = '';
+  if (c) for (const a of ACTIONS) for (const t of [0, 1]) {
+    if ((a.id !== id || t !== s) && BINDS[a.id][t] === c) {
+      BINDS[a.id][t] = BINDS[id][s];
+      note = keyName(c) + ' was on ' + a.name.toLowerCase() + (BINDS[id][s] ? '; it gets ' + keyName(BINDS[id][s]) + ' instead' : '; that slot is empty now');
+    }
+  }
+  BINDS[id][s] = c; saveBinds(); refreshKeyText(); markBinds(); bindHint(note, !!note);
+}
+function bindTo(c) {
+  const b = listening; listening = null;
+  if (!c.startsWith('Mouse')) justBound = c;
+  if (c === 'Escape') { markBinds(); bindHint(); return; }
+  if (c === 'KeyM') { markBinds(); bindHint('M is kept for sound on and off. Pick another key', true); return; }
+  setBind(b.dataset.a, +b.dataset.s, c === 'Delete' ? null : c);
+  Sfx.play('uiPick'); selectBtn(b, false);
+}
+// while a slot is listening, a mouse button anywhere is the answer, and the click it makes does nothing else
+addEventListener('mousedown', e => {
+  if (!listening) return;
+  e.preventDefault(); e.stopPropagation(); swallowClick = true;
+  bindTo('Mouse' + e.button);
+}, true);
+addEventListener('click', e => { if (swallowClick) { swallowClick = false; e.stopPropagation(); e.preventDefault(); } }, true);
+addEventListener('mouseup', e => { if (swallowClick) setTimeout(() => { swallowClick = false; }, 0); }, true);
+// the release of a key that was just bound must not press the selected slot again (Space and Enter click buttons)
+let justBound = null;
+addEventListener('keyup', e => { if (justBound && e.code === justBound) { e.preventDefault(); e.stopPropagation(); justBound = null; } }, true);
+function openKeys(from) {
+  keysFrom = from; listening = null; bindHint();
+  showScreen('scrKeys'); markBinds(); selectBtn($('bindList').querySelector('button'), false);
+}
+function closeKeys() {
+  listening = null;
+  showScreen(keysFrom); selectBtn($(keysFrom === 'scrPause' ? 'btnPauseKeys' : 'btnKeys'), false);
+}
+// arrows on the bindings grid go to the nearest slot in that direction
+function moveSelDir(d) {
+  const bs = menuButtons(), cur = document.querySelector('.menu button.sel');
+  if (!cur) { selectBtn(bs[0], true); return; }
+  const r0 = cur.getBoundingClientRect(), x0 = r0.left + r0.width / 2, y0 = r0.top + r0.height / 2;
+  const dx = d === 'left' ? -1 : d === 'right' ? 1 : 0, dy = d === 'up' ? -1 : d === 'down' ? 1 : 0;
+  let best = null, bs2 = Infinity;
+  for (const b of bs) {
+    if (b === cur) continue;
+    const r = b.getBoundingClientRect(), x = r.left + r.width / 2 - x0, y = r.top + r.height / 2 - y0;
+    const along = x * dx + y * dy; if (along <= 2) continue;
+    const score = along + Math.abs(dx ? y : x) * 3;
+    if (score < bs2) { bs2 = score; best = b; }
+  }
+  if (best) selectBtn(best, true);
+}
+$('btnKeys').addEventListener('click', () => openKeys('scrTitle'));
+$('btnPauseKeys').addEventListener('click', () => openKeys('scrPause'));
+$('btnKeysBack').addEventListener('click', () => closeKeys());
+$('btnKeysReset').addEventListener('click', () => { BINDS = defaultBinds(); saveBinds(); refreshKeyText(); markBinds(); bindHint('Back to the default keys'); });
+// every place that names a key: the HUD boxes, the move bar, the controls lists and the parry tips
+function refreshKeyText() {
+  const sh = a => { const c = firstBind(a); return c ? keyShort(c) : '—'; };
+  $('skF').querySelector('kbd').textContent = sh('slash');
+  $('skParry').querySelector('kbd').textContent = sh('parry');
+  $('skRoll').querySelector('kbd').textContent = sh('roll');
+  for (const m of MOVES) $(m.el).querySelector('kbd').textContent = sh(m.id);
+  for (const id of ['skF', 'skParry', 'skRoll']) $(id).querySelector('kbd').classList.toggle('sm', $(id).querySelector('kbd').textContent.length > 3);
+  const mv = ['up', 'left', 'down', 'right'].map(a => firstBind(a) ? keyShort(firstBind(a)) : '—').join(' ');
+  const rows = [
+    [mv, 'Move'], [bindName('slash'), 'Once for every slash'], [bindName('parry'), 'Parry on red !'], [bindName('roll'), 'Roll'],
+    [bindName('blast'), 'Blast · 50 energy'], [bindName('rend'), 'Rending slash · 25 · wave 3'], [bindName('clone'), 'Clone · 100 · wave 5'],
+    [bindName('veil'), 'Shadow veil · 50 · wave 8'], [bindName('ult'), 'Ultimate · 20 kills'], ['Esc' + (firstBind('pause') ? ' / ' + bindName('pause') : '') + ' · M', 'Pause · Sound'],
+  ];
+  for (const dl of [$('ctlKeys'), $('pauseKeys')]) {
+    dl.textContent = '';
+    for (const [k, v] of rows) {
+      const d = document.createElement('div'), t = document.createElement('dt'), dd = document.createElement('dd');
+      t.textContent = k.toUpperCase(); dd.textContent = v; d.append(t, dd); dl.appendChild(d);
+    }
+  }
+  $('parryHow').textContent = bindVerb('parry');
+  $('demoCap').textContent = 'WAIT FOR RED · THEN ' + bindVerb('parry').toUpperCase();
+}
+refreshKeyText();
 for (const b of document.querySelectorAll('.menu button')) {
   b.addEventListener('mouseenter', () => { if (!b.classList.contains('sel')) selectBtn(b, true); });
   b.addEventListener('click', () => { Sfx.init(); Sfx.play('uiPick'); });
@@ -4984,10 +5192,18 @@ cv.addEventListener('mousedown', e => {
   e.preventDefault();
   try { window.focus(); } catch (err) { }
   Sfx.init();
-  if (e.button === 0) { pressed.Mouse0 = true; keys.Mouse0 = true; }
-  if (e.button === 2) pressed.Mouse2 = true;
+  const c = 'Mouse' + e.button;
+  pressed[c] = true; keys[c] = true;
+  if (actOf(c) === 'pause') pause();
 });
-cv.addEventListener('contextmenu', e => e.preventDefault());
+// Right click is the parry, so the browser's menu never opens anywhere over the game (cards, HUD, banners).
+// An open menu swallows key releases, which left the shadow walking on its own after a card pick.
+addEventListener('contextmenu', e => e.preventDefault());
+// a release can still go missing (the pointer let go outside the frame, a drag started): trust the real button state
+const BTN_BIT = [1, 4, 2, 8, 16];
+addEventListener('mousemove', e => { for (let i = 0; i < 5; i++) if (keys['Mouse' + i] && !(e.buttons & BTN_BIT[i])) keys['Mouse' + i] = false; });
+addEventListener('dragstart', e => e.preventDefault());
+addEventListener('pointercancel', () => { for (let i = 0; i < 5; i++) keys['Mouse' + i] = false; });
 
 /* ---------------- Controls page parry demo ---------------- */
 // A looping little scene on the Controls page: a hollow knight winds up, the ! turns red, the shadow parries.
@@ -5075,7 +5291,7 @@ function start(data) {
   requestAnimationFrame(frame);
 }
 window.claude?.hot?.snapshot?.(() => ({ run: G && !G.rush && G.state !== 'title' && G.lives > 0 && G.state !== 'won' ? { wave: G.wave, lives: G.lives, energy: Math.floor(G.waveEnergy), ult: Math.floor(G.waveUlt) } : null }));
-window.__silhouette = { get G() { return G; }, ELITES, TWISTS, makeElite, makeCaptain, makeTwins, markElites, eliteCount, pickTwist, makeStoryOrder, validOrder, pickLayout, ROOM_ALTS, GUARD_HALL, CELLAR_ROOM, SCRIPTORIUM_ROOM, TWINS_WAVE, flameLevel, spawnFromGate, splitApart, setAlight, showCards, pickCard, dealCards, bv, BUFFS, get ROOM() { return ROOM; }, get OBST() { return OBST; }, loadRoom, ROOM_DEFS, THRONE_ROOM, blocked, parryAlert, TYPES, beginWave, startBetrayal, beginBoss, update, render, startRun, keys, pressed, kill, damageEnemy, Music, Sfx, musicFor, addEnergy, parrySuccess, hurtTarget, updateHud, startRush, makeEnemy, makeBeam, beamLen, RUSH_BOSSES, rushWave, showTitle, musicTracks: MUSIC, armPose, bark, get OBST_LIST() { return OBST; }, STORY_ROOMS, inWater, inMud, buildRoom, CART_WARN, SKINS, setSkin, get skinId() { return skinId; }, SOUNDS, DODGE_ENERGY };
+window.__silhouette = { get G() { return G; }, get BINDS() { return BINDS; }, setBind, loadBinds, refreshKeyText, defaultBinds, bindVerb, withKeys, openKeys, closeKeys, NOTES, ROLL_T, CLICK_BUFFER, ELITES, TWISTS, makeElite, makeCaptain, makeTwins, markElites, eliteCount, pickTwist, makeStoryOrder, validOrder, pickLayout, ROOM_ALTS, GUARD_HALL, CELLAR_ROOM, SCRIPTORIUM_ROOM, TWINS_WAVE, flameLevel, spawnFromGate, splitApart, setAlight, showCards, pickCard, dealCards, bv, BUFFS, get ROOM() { return ROOM; }, get OBST() { return OBST; }, loadRoom, ROOM_DEFS, THRONE_ROOM, blocked, parryAlert, TYPES, beginWave, startBetrayal, beginBoss, update, render, startRun, keys, pressed, kill, damageEnemy, Music, Sfx, musicFor, addEnergy, parrySuccess, hurtTarget, updateHud, startRush, makeEnemy, makeBeam, beamLen, RUSH_BOSSES, rushWave, showTitle, musicTracks: MUSIC, armPose, bark, get OBST_LIST() { return OBST; }, STORY_ROOMS, inWater, inMud, buildRoom, CART_WARN, SKINS, setSkin, get skinId() { return skinId; }, SOUNDS, DODGE_ENERGY };
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 })();
 </script>
