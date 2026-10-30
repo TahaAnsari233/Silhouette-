@@ -72,7 +72,7 @@ Each ability has its own sound:
 
 ## Appearance
 
-Choose how your shadow looks from Appearance on the title screen: the classic shade, the hooded wanderer, the broken crown, the masked assassin, the smoke wraith or the horned shade. A preview shows each one walking and slashing. Your choice is saved, and your clone and the Betrayer wear it too.
+Choose how your shadow looks from Appearance on the title screen: the classic shade, the hooded wanderer, the broken crown, the masked assassin, the smoke wraith, the horned shade or man face. Man face wears a big round head with a famously smug face, drawn sharp on top of the pixel art so every line of it shows. A preview shows each one walking and slashing. Your choice is saved, and your clone and the Betrayer wear it too.
 
 ## Rush mode
 
