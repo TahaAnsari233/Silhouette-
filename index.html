@@ -782,6 +782,7 @@ const MID_AREAS = ['halls', 'under', 'spires'];
 const STORY_WAVES = (MID_AREAS.length + 2) * AREA_WAVES; // the last one is King Aurel, on the throne
 const LAST_ROOM = STORY_WAVES - 1;
 const BETRAYER_WAVE = STORY_WAVES - AREA_WAVES / 2; // wave 45, in the guard hall
+const CHECKPOINTS = [20, 40];
 function shuffled(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function areaRooms(id) {
   const A = AREAS[id], slots = Array(AREA_WAVES - 1).fill(null);
@@ -837,7 +838,7 @@ const roomCache = {};
 const THRONE_TORCHES = [{ x: 128, y: 24 }, { x: 272, y: 24 }, { x: 8, y: 70 }, { x: 392, y: 70 }, { x: 8, y: 180 }, { x: 392, y: 180 }];
 function loadRoom(i, v = 0) {
   if (!ROOM || ROOM.id !== i || (ROOM.layout || 0) !== v || ROOM.dirty) buildRoom(i, v);
-  resetForge();
+  resetForge(); G.pend = null;
   G.cam = camTarget(G.player); G.atm = makeAtmosphere();
 }
 // a random furniture layout for the room, never the one it had the last time you were here
@@ -2928,7 +2929,7 @@ function startRun(save) {
   // the run keeps its room order through deaths and reloads
   if (save && validOrder(save.order, save.areas)) { G.order = save.order; G.areas = save.areas; }
   else { const o = makeStoryOrder(); G.order = o.order; G.areas = o.areas; }
-  // the checkpoint you fall back to once all three lives are spent (the start of the last area reached)
+  // the checkpoint you fall back to once all three lives are spent (wave 20 or 40, the last one reached)
   G.check = save && save.check && save.check.wave > 1 && save.check.wave <= STORY_WAVES ? save.check : null;
   rebuildBuffs(); applyBuffs(G.player);
   showScreen(null); $('hud').hidden = false; $('cards').hidden = true;
@@ -2979,10 +2980,9 @@ function beginWave(n) {
   G.waveEnergy = P.energy; G.waveUlt = G.ult; endUlt(true);
   P.hp = P.maxHp;
   setupMission(ri);
-  // the first room of every area after the first is a checkpoint
-  // (and so is the room after the Betrayer)
-  const checkpoint = !G.rush && n > 1 && ((n - 1) % AREA_WAVES === 0 || n === BETRAYER_WAVE + 1) && (!G.check || G.check.wave < n);
-  if (checkpoint) G.check = { wave: n, energy: Math.floor(P.energy), ult: Math.floor(G.ult || 0), picks: (G.picks || []).map(p => ({ ...p })) };
+  // only two checkpoints on the climb: waves 20 and 40 (each one an area boss's fight)
+  const checkpoint = !G.rush && CHECKPOINTS.includes(n) && (!G.check || G.check.wave < n);
+  if (checkpoint) { G.check = { wave: n, energy: Math.floor(P.energy), ult: Math.floor(G.ult || 0), picks: (G.picks || []).map(p => ({ ...p })) }; num(P.x, P.y - 34, 'CHECKPOINT REACHED', '#ffd36b'); }
   // the twist gets a banner of its own, right after the wave's
   G.bannerNext = G.twist ? [TWISTS[G.twist].name, TWISTS[G.twist].sub, 2.4, 'gold', TWISTS[G.twist].snd] : null;
   if (kind) {
@@ -5798,7 +5798,7 @@ function bossCol(b) { return b.kind === 'warden' ? '#ffd36b' : b.kind === 'levia
 // the water climbs over the edges of the walkways.
 const LEVI_PHASE2 = .5, COIL_DMG = .35, LEVI_SWIM = 120, LEVI_DIVE = .45, LEVI_RISE = .7, LEVI_REAR = .55, LEVI_NECK = 34;
 const LEVI_WIND = [.95, .8], LEVI_LUNGE_SPD = 460, LEVI_LUNGE_LEN = 210, LEVI_REACH = 320, LEVI_RETRACT = 260;
-const LEVI_STUCK = 2, LEVI_PARRY_STUCK = 3, LEVI_THRASH_CD = [11, 8], CRACK_T = 2.4, CRACK_DMG = 10;
+const LEVI_UNDER_MAX = 3, LEVI_STUCK = 2, LEVI_PARRY_STUCK = 3, LEVI_THRASH_CD = [11, 8], CRACK_T = 2.4, CRACK_DMG = 10;
 const LEVI_RISE_PX = 5, LEVI_DROWNED = 3, LEVI_CALL_CD = 13;
 // the gate-eater: it swallowed the old sluice gates, and their rusted plates have grown into its head and back
 const LEVI_HEAD = ['....kkkkkkk.......', '..kkHHHHHHHkk.....', '.kHhhhhhhhhhHkk...', 'kGGGeekGGGGGGGGk..', 'kGGGekkGGGGGGGGGk.', 'kgGGGGGGGGGGGGGGGk', 'kkkkkkkkkkkkkkkkkk',
@@ -5875,7 +5875,8 @@ function updLeviathan(b, dt) {
       if (d > step) { b.x += dx / d * step; b.y += dy / d * step; } else { b.x = b.tx; b.y = b.ty; }
       b.bx = b.x; b.by = b.y; b.face = a;
       if (Math.random() < .3 && G.parts.length < 700) G.parts.push({ x: b.x + rnd(-6, 6), y: b.y + rnd(-2, 2), vx: 0, vy: -6, life: .5, max: .5, col: '#9fe6f2', size: 1 });
-      if (d <= step && b.st >= .8) { b.gone = false; setState(b, 'rise'); splash(b.x, b.y, true); Sfx.play('splash'); }
+      // up when it gets there; close is enough, since furniture can push it back off the exact spot, and never more than 3s under
+      if ((d <= Math.max(step, 14) && b.st >= .8) || b.st >= LEVI_UNDER_MAX) { b.gone = false; setState(b, 'rise'); splash(b.x, b.y, true); Sfx.play('splash'); }
       break;
     }
     case 'rise': b.face = a; if (b.st >= LEVI_RISE) setState(b, 'rear'); break;
@@ -6777,7 +6778,7 @@ function updPendulum(dt) {
 }
 // the lane it sweeps, dashed gold on the floor, and the bob's shadow racing along it
 function drawPendLane() {
-  if (!G.pend) return;
+  if (!G.pend || !ROOM.def || !ROOM.def.clock) return;
   const c = ROOM.def.clock, reach = Math.sin(G.pend.amp) * PEND_L, b = pendBob(), hot = G.pend.loud > 0;
   ctx.fillStyle = hot && Math.floor(G.time * 10) % 2 ? '#ff9a2e' : '#ffd36b'; ctx.globalAlpha = hot ? .5 : .28;
   for (let x = c.cx - reach; x < c.cx + reach; x += 6) { ctx.fillRect(Math.round(x), c.y - 9, 3, 1); ctx.fillRect(Math.round(x), c.y + 8, 3, 1); }
