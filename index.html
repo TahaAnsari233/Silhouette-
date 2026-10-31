@@ -283,7 +283,10 @@ button:active{transform:translate(.2cqw,.2cqw)}
 #scrLore .panel{max-width:90cqw;gap:1cqw}
 #scrLore h2{font-size:5cqw}
 .lorerow{display:flex;gap:2.4cqw;align-items:flex-start}
-#loreList{display:grid;grid-template-columns:repeat(2,auto);grid-auto-flow:row;gap:.45cqw .8cqw;align-content:start}
+#loreList{display:grid;grid-template-columns:repeat(2,auto);grid-auto-flow:row;gap:.45cqw .8cqw;align-content:start;max-height:33cqw;overflow-y:auto;overscroll-behavior:contain;padding:.3cqw .9cqw .3cqw .3cqw;scrollbar-width:thin;scrollbar-color:#5b3fd0 #14101e}
+#loreList::-webkit-scrollbar{width:.6cqw}
+#loreList::-webkit-scrollbar-track{background:#14101e}
+#loreList::-webkit-scrollbar-thumb{background:#5b3fd0}
 #loreList button{min-width:17cqw;padding:.45cqw .8cqw;font-size:max(7px,.85cqw);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:19cqw}
 #loreList button.lost{color:#5d5872}
 .leaf{width:36cqw;min-height:28cqw;box-sizing:border-box;padding:1.8cqw 2.2cqw;color:#2a2116;
@@ -296,6 +299,8 @@ button:active{transform:translate(.2cqw,.2cqw)}
 #lookCv{display:block;width:20cqw;height:auto;aspect-ratio:120/96;image-rendering:pixelated;box-shadow:0 0 0 .22cqw #000,inset 0 0 0 .2cqw #3a3550;background:#0c0b14}
 #demo{display:block;width:20cqw;image-rendering:pixelated;box-shadow:0 0 0 .22cqw #000,inset 0 0 0 .2cqw #3a3550;background:#0c0b14}
 .democap{margin:.5cqw 0 0;font-size:max(7px,.78cqw);color:#8e86a8;letter-spacing:.1em;text-align:center}
+#btnSchool{position:absolute;right:2.2cqw;bottom:2.2cqw;font-size:max(7px,.85cqw);padding:.55cqw 1cqw;color:var(--dim)}
+#btnSchool.on{color:var(--gold);box-shadow:0 0 0 .22cqw #000,inset 0 0 0 .2cqw var(--gold),.45cqw .45cqw 0 .22cqw #000}
 .small-note{display:none;margin:0;font-family:var(--body);font-size:max(13px,2cqw);color:var(--gold)}
 /* Small frames (phones, narrow windows): keep the title readable and say what the game needs. */
 @container (max-width: 720px){
@@ -382,6 +387,7 @@ button:active{transform:translate(.2cqw,.2cqw)}
         <p class="menuhint">W / S or mouse to choose · Enter to select</p>
         <p class="small-note">Silhouette needs a mouse and keyboard. Open it on a computer to play.</p>
       </div>
+      <button id="btnSchool" title="Hold the slash button to keep swinging, instead of clicking for every swing">School mode · <span id="schoolState">off</span></button>
     </section>
 
     <section class="screen" id="scrControls" hidden>
@@ -452,7 +458,7 @@ button:active{transform:translate(.2cqw,.2cqw)}
           <div><dt>ENEMIES</dt><dd id="oKills">0</dd></div>
           <div><dt>TIME</dt><dd id="oTime">0:00</dd></div>
         </dl>
-        <div class="menu"><button id="btnRetry" class="primary">Try again from wave 1</button><button id="btnRestart" hidden>Start over from wave 1</button></div>
+        <div class="menu"><button id="btnRetry" class="primary">Try again from wave 1</button><button id="btnRestart" hidden>Start over from wave 1</button><button id="btnOverTitle">Title screen</button></div>
         <p class="fine">Press Enter to try again.</p>
       </div>
     </section>
@@ -2819,6 +2825,12 @@ const SKINS = [
 ];
 const SKIN_KEY = 'silhouette.skin';
 let skinId = 'classic';
+// School mode: hold the slash button to keep swinging, instead of a click for every swing
+const SCHOOL_KEY = 'silhouette.school';
+let schoolMode = false;
+function loadSchool() { try { schoolMode = localStorage.getItem(SCHOOL_KEY) === '1'; } catch (e) { } markSchool(); }
+function markSchool() { const b = document.getElementById('btnSchool'); if (!b) return; b.classList.toggle('on', schoolMode); document.getElementById('schoolState').textContent = schoolMode ? 'on' : 'off'; }
+function toggleSchool() { schoolMode = !schoolMode; try { localStorage.setItem(SCHOOL_KEY, schoolMode ? '1' : '0'); } catch (e) { } markSchool(); }
 function loadSkin() { try { const s = localStorage.getItem(SKIN_KEY); if (SKINS.some(k => k.id === s)) skinId = s; } catch (e) { } }
 function setSkin(id) { skinId = id; try { localStorage.setItem(SKIN_KEY, id); } catch (e) { } }
 // the player, your clone and the Betrayer (and its shadow copies) all wear your appearance
@@ -3366,6 +3378,7 @@ function makeAlly(x, y) {
     flash: 0, kx: 0, ky: 0, walk: 0, moving: false, alpha: 1 };
 }
 // the boss grows with your blessings: each point (common 1, rare 1.5, legendary 2.5) adds 1.25% hp and 0.75% damage
+const BOSS_HIT_MUL = 2; // every boss hits twice as hard as its numbers say: standing in its reach should hurt
 const BOSS_HP = 1100, BOSS_DMG = 1.1, BOSS_TIER_PTS = [1, 1.5, 2.5], BOSS_PTS_MAX = 20;
 // a roll started this close before the boss's blast goes off still dodges it, even if the tumble has ended
 const BOSS_BLAST_DODGE = .6;
@@ -3375,7 +3388,7 @@ function bossScale() {
 }
 function makeBoss(x, y) {
   const sc = bossScale(), hp = Math.round(BOSS_HP * sc.hp);
-  return { kind: 'boss', hostile: true, T: { kb: .25, poise: 3 }, x, y, r: 8, hp, maxHp: hp, dm: BOSS_DMG * sc.dmg, scale: 1.4, face: Math.PI / 2, aim: 0,
+  return { kind: 'boss', hostile: true, T: { kb: .25, poise: 3 }, x, y, r: 8, hp, maxHp: hp, dm: BOSS_DMG * sc.dmg * BOSS_HIT_MUL, scale: 1.4, face: Math.PI / 2, aim: 0,
     state: 'chase', st: 0, cd: 1.2, blastCd: 3, dashCd: 3, rollCd: 2, waveCd: 0, copyCd: 1.5, daggerCd: 0, grabCd: 3, strafe: 1, combo: 0, hitIdx: -1, flash: 0, kx: 0, ky: 0, walk: 0, moving: false,
     phase: 1, tele: false, stagT: 0, recT: 0, dashHit: false, alpha: 1 };
 }
@@ -3396,7 +3409,7 @@ const RUSH_LAP_HP = .4, RUSH_LAP_DMG = .2;
 function isBoss(e) { return e.kind === 'boss' || e.kind === 'warden' || e.kind === 'archmage' || e.kind === 'leviathan' || e.kind === 'rook' || e.kind === 'king'; }
 function makeRushBoss(kind, x, y) {
   const lap = G.rush ? Math.floor((G.wave / RUSH_BOSS_EVERY - 1) / 2) : 0, sc = bossScale(), hp = Math.round(RUSH_BOSSES[kind].hp * sc.hp * (1 + RUSH_LAP_HP * lap));
-  return { kind, hostile: true, T: { kb: kind === 'leviathan' ? 0 : .15, poise: 4 }, x, y, r: kind === 'warden' ? 9 : kind === 'leviathan' ? 10 : kind === 'rook' ? 9 : 7, hp, maxHp: hp, dm: sc.dmg * (1 + RUSH_LAP_DMG * lap),
+  return { kind, hostile: true, T: { kb: kind === 'leviathan' ? 0 : .15, poise: 4 }, x, y, r: kind === 'warden' ? 9 : kind === 'leviathan' ? 10 : kind === 'rook' ? 9 : 7, hp, maxHp: hp, dm: sc.dmg * (1 + RUSH_LAP_DMG * lap) * BOSS_HIT_MUL,
     scale: kind === 'warden' ? 1.7 : kind === 'rook' ? 2 : 1.5, face: Math.PI / 2, aim: 0, state: 'intro', st: 0, cd: 1.2, slamCd: 3, chargeCd: 0, pillarCd: 2, blinkCd: 2, nearT: 0, next: 'rain',
     phase: 1, tele: false, stagT: 0, recT: 0, hitIdx: -1, parried: 0, slams: 0, z: 0, flash: 0, kx: 0, ky: 0, walk: 0, moving: false, alpha: 1 };
 }
@@ -3801,8 +3814,9 @@ function hurtTarget(t, dmg, sx, sy, kb = 90, attacker = null) {
   if (t.kind === 'player') {
     const P = t;
     // melee swings can be parried: inside the window it is a counter, after it the guard only softens the hit
-    if (attacker && P.state === 'parry' && G.state !== 'dying') {
-      if (P.st <= parryWin()) { parryMelee(attacker, P); return false; }
+    const grace = P.parryGrace > G.time;
+    if (attacker && (P.state === 'parry' || grace) && G.state !== 'dying') {
+      if (grace || P.st <= parryWin()) { parryMelee(attacker, P); return false; }
       num(P.x, P.y - 24, 'TOO EARLY', '#ff9a7a');
       dmg *= PARRY_EARLY_DMG; P.state = 'idle'; P.parryCd = PARRY_CD;
     }
@@ -3848,6 +3862,7 @@ function hurtTarget(t, dmg, sx, sy, kb = 90, attacker = null) {
 // enemy melee: they start swinging from further out, keep turning to follow you while the glint is
 // yellow, then lock on red and step into a wide cut, so stepping aside rarely works: roll or parry
 const FOE_REACH = 10, FOE_ARC = 1.6, FOE_STEP = 14, FOE_TRACK = 7;
+const PARRY_GRACE = .25, PARRY_GRACE_HITS = 3, PARRY_BACK_R = 64, PARRY_BACK_T = .6; // after a clean parry the guard holds this long, so a second attacker a beat behind the first is parried too
 const PARRY_WINDOW = .3, PARRY_TOTAL = .6, PARRY_CD = .35, PARRY_EARLY_DMG = .7, DEFLECT_DMG = 1.6;
 const PARRY_ENERGY = 30, PARRY_COUNTER = 18, PARRY_COUNTER_BOSS = 25;
 // Parries in a row without getting hit pay more: +30, +35, +40 ... up to +50.
@@ -3882,7 +3897,12 @@ function parrySuccess(P, x, y) {
   burst(x, y, '#fff3c4', 12, 90, .3); burst(x, y, '#c3b0ff', 8, 60, .3);
   G.hitstop = .09; shake(2.5); Sfx.play('parry');
   // a clean parry is ready again at once, so a whole combo can be answered hit by hit
+  // the guard holds a moment longer for the next attacker in line, up to the third (then press again)
+  P.parryHits = P.state === 'parry' ? 1 : (P.parryHits || 0) + 1;
+  P.parryGrace = P.parryHits < PARRY_GRACE_HITS ? G.time + (G.hitstop || 0) + PARRY_GRACE : 0;
   P.state = 'idle'; P.parryCd = 0;
+  // the soldiers pressing in round you flinch back a few steps before they come again
+  for (const e of G.enemies) if (!e.dead && e.hostile && !e.entering && !e.flee && !isBoss(e) && e.kind !== 'coil' && e.state !== 'windup' && dist(e, P) < PARRY_BACK_R) { e.backT = PARRY_BACK_T; e.cd = Math.max(e.cd, PARRY_BACK_T + .15); }
   const m = $('enMeter'); m.classList.remove('gain'); void m.offsetWidth; m.classList.add('gain');
 }
 function parryMelee(e, P) {
@@ -3915,7 +3935,7 @@ function knockShield(e, P) {
 function parryArrow(p, P) {
   const inAngle = Math.atan2(p.vy, p.vx) + Math.PI;
   P.face = inAngle;
-  if (P.st <= parryWin()) {
+  if (P.st <= parryWin() || P.parryGrace > G.time) {
     let tgt = p.owner && !p.owner.dead ? p.owner : null;
     if (!tgt) { let bd = 1e9; for (const e of hostiles()) { const d = dist(P, e); if (d < bd) { bd = d; tgt = e; } } }
     const a = tgt ? Math.atan2(tgt.y - 8 - p.y, tgt.x - p.x) : inAngle;
@@ -4379,8 +4399,9 @@ function buffSummary() {
 
 /* ---------------- Ultimate ---------------- */
 // Fills from kills (rogue clones count double, boss damage counts too). Press 1 when full:
-// 30s (or until the wave ends) of longer reach, faster movement and a 100 point shadow shield.
-const ULT_KILLS = 20, ULT_TIME = 30, ULT_SHIELD = 100, ULT_REACH = 1.85, ULT_SPEED = 1.3, ULT_BOSS_DMG = 40;
+// 15s (or until the wave ends) of longer reach and faster movement, a 10 point shadow shield, and for the first
+// 5s your health refills fast enough to go from empty to full
+const ULT_KILLS = 20, ULT_TIME = 15, ULT_SHIELD = 10, ULT_REGEN_T = 5, ULT_REACH = 1.85, ULT_SPEED = 1.3, ULT_BOSS_DMG = 40;
 const ULT_FLAME = ['#140a2a', '#5b3fd0', '#c9b8ff'];
 function chargeUlt(n) {
   if (G.ultT > 0 || G.ult >= ULT_KILLS) return;
@@ -4392,7 +4413,7 @@ function tryUlt() {
   if (G.ultT > 0) return;
   // during a fight or its intro (the timer only runs once the fight starts), never in the pause between waves
   if (G.ult < ULT_KILLS || !['intro', 'fight', 'boss'].includes(G.state)) { deny('ultMeter'); return; }
-  G.ult = 0; G.ultT = ULT_TIME; G.shield = ULT_SHIELD; P.inv = Math.max(P.inv, .4); G.crownAdd = 0;
+  G.ult = 0; G.ultT = ULT_TIME; G.shield = ULT_SHIELD; G.regenT = ULT_REGEN_T; G.regenAcc = 0; P.inv = Math.max(P.inv, .4); G.crownAdd = 0;
   if (bv('crown')) crownKneel();
   G.fx.push({ type: 'ring', x: P.x, y: P.y - 5, r0: 4, r1: 72, t: 0, dur: .5, col: '#c9b8ff' });
   G.fx.push({ type: 'ring', x: P.x, y: P.y - 5, r0: 2, r1: 46, t: 0, dur: .3, col: '#ffffff' });
@@ -4429,7 +4450,18 @@ function drawCrowns() {
   const P = G.player;
   if (G.ultT > 0 && bv('crown') && P.state !== 'dead') cr(Math.round(P.x), Math.round(P.y - 20));
 }
+// for the ultimate's first 5s your health climbs back: fast enough to fill the whole bar from empty
+function updUltRegen(dt) {
+  const P = G.player;
+  if (!(G.regenT > 0) || !['fight', 'boss'].includes(G.state)) return;
+  if (P.state === 'dead') { G.regenT = 0; return; }
+  G.regenT -= dt;
+  const add = Math.min(P.maxHp - P.hp, P.maxHp / ULT_REGEN_T * dt); P.hp += add; G.regenAcc += add;
+  if (G.regenAcc >= 1 && (G.regenT <= 0 || Math.floor(G.regenT * 2) !== Math.floor((G.regenT + dt) * 2))) { num(P.x + rnd(-5, 5), P.y - 30, '+' + Math.round(G.regenAcc), '#7dff9a'); G.regenAcc = 0; }
+  if (P.hp < P.maxHp && G.parts.length < 900 && Math.random() < .5) G.parts.push({ x: P.x + rnd(-5, 5), y: P.y - rnd(0, 12), vx: 0, vy: rnd(-26, -14), life: .5, max: .5, col: Math.random() < .5 ? '#7dff9a' : '#c9ffd6', size: 1 });
+}
 function endUlt(silent) {
+  G.regenT = 0;
   if (G.ultT <= 0 && G.shield <= 0) return;
   G.ultT = 0; G.shield = 0;
   if (!silent) { const P = G.player; num(P.x, P.y - 28, 'ULTIMATE FADES', '#9a8cc8'); burst(P.x, P.y - 8, '#5b3fd0', 14, 50, .5); }
@@ -4443,7 +4475,8 @@ function updatePlayer(dt) {
   P.rollCd -= dt; P.rendCd -= dt; P.rayCd = (P.rayCd || 0) - dt; P.parryCd -= dt; P.inv -= dt; P.flash -= dt; P.comboWindow -= dt; P.atkCd -= dt; P.st += dt; P.rootT -= dt;
   // every swing needs its own click; a click is remembered for CLICK_BUFFER seconds, so one made a moment
   // early (at the end of a roll, a parry or the previous swing) still lands
-  P.clickT = hit('slash') && controlsOn() ? CLICK_BUFFER : (P.clickT || 0) - dt;
+  // (in school mode, holding the button counts as clicking again and again)
+  P.clickT = (hit('slash') || (schoolMode && held('slash'))) && controlsOn() ? CLICK_BUFFER : (P.clickT || 0) - dt;
   P.x += P.kx * dt; P.y += P.ky * dt; const kd = Math.max(0, 1 - 10 * dt); P.kx *= kd; P.ky *= kd;
   if (P.state === 'dead') return;
   const on = controlsOn();
@@ -4577,7 +4610,35 @@ function pickEngaged() {
   G.engaged = new Set(melee.filter(e => e.state === 'windup' || e.state === 'recover'));
   for (const e of melee) { if (G.engaged.size >= ENGAGE_MAX) break; G.engaged.add(e); }
 }
+// Crowding a boss: stand within its reach for 1s and it throws you off. A red ring closes in on it, the ! goes
+// yellow then red, and it slams the floor round itself: parry it on red, or roll out. Its own fight waits meanwhile.
+// It never fires while the boss is down, stuck or reeling, so those openings stay yours.
+const CROWD_T = 1, CROWD_TELL = .45, CROWD_DMG = 16, CROWD_KB = 340, CROWD_NO = ['intro', 'roar', 'dive', 'under', 'rise', 'stuck', 'stagger', 'broken', 'dying'];
+function crowdReach(b) { return b.r + G.player.r + 22; }
+function updCrowd(b, dt) {
+  const P = G.player;
+  if (b.crowdSlam) {
+    const c = b.crowdSlam; c.t += dt; b.tele = true;
+    if (!c.hit && c.t >= CROWD_TELL) {
+      c.hit = true;
+      G.fx.push({ type: 'ring', x: b.x, y: b.y - 4, r0: 6, r1: crowdReach(b) + 12, t: 0, dur: .25, col: '#fff3c4' });
+      burst(b.x, b.y - 6, '#ff5a50', 16, 90, .4); shake(5); Sfx.play('slam');
+      for (const t of enemyTargets()) if (Math.hypot(t.x - b.x, t.y - b.y) < crowdReach(b) + 8) { hurtTarget(t, CROWD_DMG * b.dm, b.x, b.y, CROWD_KB, b); if (b.crowdSlam !== c) return true; }
+    }
+    if (c.t >= CROWD_TELL + .25) b.crowdSlam = null;
+    return true;
+  }
+  const open = ['fight', 'boss'].includes(G.state) && P.state !== 'dead' && !b.dead && !b.gone && !b.fly && (b.z || 0) < 8 && (b.alpha ?? 1) > .5 && !CROWD_NO.includes(b.state);
+  if (open && Math.hypot(P.x - b.x, P.y - b.y) < crowdReach(b)) b.crowdT = (b.crowdT || 0) + dt;
+  else b.crowdT = Math.max(0, (b.crowdT || 0) - dt);
+  if (!open || b.crowdT < CROWD_T) return false;
+  b.crowdT = 0; b.crowdSlam = { t: 0, hit: false }; b.face = Math.atan2(P.y - b.y, P.x - b.x);
+  G.fx.push({ type: 'ring', x: b.x, y: b.y - 4, r0: crowdReach(b) + 12, r1: 8, t: 0, dur: CROWD_TELL, col: '#ff5a50' });
+  num(b.x, b.y - 32, 'GET BACK', '#ff9a7a'); Sfx.play('cast');
+  return true;
+}
 function updEnemy(e, dt) {
+  if (isBoss(e) && updCrowd(e, dt)) return;
   if (e.kind === 'boss') { updBoss(e, dt); return; }
   if (e.kind === 'warden') { updWarden(e, dt); return; }
   if (e.kind === 'archmage') { updArchmage(e, dt); return; }
@@ -4624,6 +4685,15 @@ function updEnemy(e, dt) {
   }
   const t = pickTarget(e);
   if (e.state === 'stagger') { if (e.st >= e.stagT) { e.tumble = false; setState(e, 'chase'); } return; }
+  // flinching back after you parried: a few steps away, still facing you
+  if (e.backT > 0) {
+    e.backT -= dt;
+    if (e.state !== 'windup' && !(e.pinT > 0)) {
+      const P = G.player, a = Math.atan2(e.y - P.y, e.x - P.x), sp = (e.spd || 30) * .9, nx = e.x + Math.cos(a) * sp * dt, ny = e.y + Math.sin(a) * sp * dt;
+      if (!blocked(nx, ny, e.r)) { e.x = nx; e.y = ny; e.moving = true; e.walk += dt * 6; }
+      e.face = a + Math.PI; return;
+    }
+  }
   if (e.kind === 'hound') { houndAI(e, t, dt); return; }
   if (e.kind === 'garg' && gargAI(e, t, dt)) return;
   if (e.state === 'windup') {
@@ -5563,7 +5633,7 @@ const KING_SWEEP_CD = [6, 5], KING_GUARDS = [2, 3], KING_GUARD_CD = [15, 12];
 const KING_LAMP_HP = 130, KING_LAMP_GUARD = .25, KING_CHARGE_SPD = 250, KING_CHARGE_T = .5;
 function makeKing(x, y) {
   const sc = bossScale(), hp = Math.round(KING_HP * sc.hp);
-  return { kind: 'king', hostile: true, T: { kb: .12, poise: 4 }, x, y, r: 8, hp, maxHp: hp, dm: BOSS_DMG * sc.dmg, scale: 1.5, face: Math.PI / 2, aim: 0,
+  return { kind: 'king', hostile: true, T: { kb: .12, poise: 4 }, x, y, r: 8, hp, maxHp: hp, dm: BOSS_DMG * sc.dmg * BOSS_HIT_MUL, scale: 1.5, face: Math.PI / 2, aim: 0,
     state: 'roar', st: 0, cd: 1.5, bashCd: 0, blazeCd: 5, sweepCd: 2.5, guardCd: 3, chargeCd: 0, phase: 1, tele: false, stagT: 0, recT: 0, flash: 0, kx: 0, ky: 0, walk: 0, moving: false, alpha: 1 };
 }
 // Wave 40: you walk up to the throne, the Lamp on it flares, and the King steps out of its light
@@ -6509,6 +6579,7 @@ function update(dt) {
   updatePlayer(dt);
   G.flashUlt -= dt; G.mageLock -= dt;
   if (G.ultT > 0 && ['fight', 'boss'].includes(G.state)) { G.ultT -= dt; if (G.ultT <= 0) endUlt(); }
+  updUltRegen(dt);
   pickEngaged();
   for (const e of G.enemies) if (!e.dead) updEnemy(e, dt);
   for (const a of G.allies) if (!a.dead) updAlly(a, dt);
@@ -6580,7 +6651,7 @@ function updProj(dt) {
     }
     for (const t of enemyTargets()) {
       if (Math.hypot(p.x - t.x, p.y - (t.y - 7)) < t.r + 3) {
-        if (t.kind === 'player' && t.state === 'parry') { parryArrow(p, t); break; }
+        if (t.kind === 'player' && (t.state === 'parry' || t.parryGrace > G.time)) { parryArrow(p, t); break; }
         if (hurtTarget(t, p.dmg, p.x - p.vx, p.y - p.vy, 70)) { p.dead = true; burst(p.x, p.y, '#d9c9a3', 4, 40, .2); vampHeal(p.owner, p.dmg, t); if (p.owner && p.owner.elite === 'burn' && t.kind === 'player') setAlight(t); }
         break;
       }
@@ -8154,12 +8225,19 @@ function drawBlaze(L, a) {
   const bob = figBob(e, fr) + (q === 'breathe' && Math.sin(qt * 2.4) > .3 ? -1 : 0);
   const sk = skinOf(e), sid = sk ? sk.id : null;
   const eye = (lk && lk.eye) || (k === 'player' && sk ? sk.eye : p.eye);
-  // capes and cloaks hang behind the body
-  if (sid === 'hood' || sid === 'crown') {
-    const cape = sid === 'crown' && !mono ? '#1e1236' : p.body;
-    for (let y = -11; y < 0; y++) { const w = 8 + Math.floor((y + 11) / 3), fl = sid === 'hood' && y > -4 && e.moving ? Math.round(Math.sin(G.time * 12 + y)) : 0; R(-w / 2 + fl, y + bob * (y < -6 ? 1 : 0), w, 1, cape); }
-    if (sid === 'hood') for (let i = -4; i <= 3; i += 2) R(i, -1 + ((Math.floor(G.time * 8) + i) & 1), 1, 1, p.body);
-  }
+  // capes and cloaks hang behind the body: seen from the front only their edges show past the shoulders and
+  // legs, from the side they trail out behind, and from the back they cover it (drawn over the body, below)
+  const caped = sid === 'hood' || sid === 'crown', capeCol = sid === 'crown' && !mono ? '#1e1236' : p.body;
+  const drawCape = () => {
+    const front = dir === 'd', back = dir === 'l' || dir === 'r' ? -2 : 0;
+    for (let y = -11; y < 0; y++) {
+      const w = 8 + Math.floor((y + 11) / (front ? 4 : 3)), fl = sid === 'hood' && y > -4 && e.moving ? Math.round(Math.sin(G.time * 12 + y)) : 0, yy = y + bob * (y < -6 ? 1 : 0);
+      if (front && y >= -5) { const h = Math.ceil(w / 2); if (h > 3) { R(-h + fl, yy, h - 3, 1, capeCol); R(3 + fl, yy, h - 3, 1, capeCol); } }
+      else R(-w / 2 + fl + back, yy, w, 1, capeCol);
+    }
+    if (sid === 'hood' && !front) for (let i = -4; i <= 3; i += 2) R(i + back, -1 + ((Math.floor(G.time * 8) + i) & 1), 1, 1, p.body);
+  };
+  if (caped && dir !== 'u') drawCape();
   if (sid === 'mask' && !mono) {
     // a red scarf streaming out behind, longer and wilder on the move
     const len = e.moving ? 8 : 5, back = dir === 'r' || dir === 'l' ? -1 : 1;
@@ -8181,6 +8259,7 @@ function drawBlaze(L, a) {
     } else { R(-3, -5, 2, fr === 0 ? 4 : 5, p.legs); R(1, -5, 2, fr === 1 || tap ? 4 : 5, p.legs); }
     U(-4 - wd, -11 + bob - tl, 8 + 2 * wd, 7 + tl, p.body); U(-4 - wd, -5 + bob, 8 + 2 * wd, 1, p.dark);
   }
+  if (caped && dir === 'u') drawCape(); // walking away: the cape covers the back
   // a posed arm is drawn below as a line out to the hand instead of hanging at the side
   if (!(pose && pose.both)) U(-5 - wd, -10 + bob - tl + (fr === 1 ? 1 : 0), 1, 5, p.arm);
   if (!pose) U(4 + wd, -10 + bob - tl + (fr === 0 ? 1 : 0), 1, 5, p.arm);
@@ -8713,6 +8792,8 @@ function drawEntityUI(e) {
 const MELEE_ALERT = ['bandit', 'spear', 'knight', 'rogue', 'drowned', 'lamplighter', 'bearer'];
 function parryAlert(e) {
   if (!e.hostile || e.dead) return null;
+  // a crowded boss about to throw you off
+  if (e.crowdSlam && !e.crowdSlam.hit) return CROWD_TELL - e.crowdSlam.t <= parryWin() ? 'red' : 'yellow';
   if (MELEE_ALERT.includes(e.kind) && e.state === 'windup') return windOf(e) - e.st <= parryWin() ? 'red' : 'yellow';
   // the Warden's charge: red once it is about to reach you
   if (e.kind === 'warden' && e.state === 'chargeWind') return 'yellow';
@@ -8816,7 +8897,9 @@ const SLASH_PAL = {
   player: ['#d9ccff', '#9a6cff', '#2a1650', '#06040a'], clone: ['#e4dcff', '#a58cff', '#33206a', '#0a0614'],
   rogue: ['#fff0f0', '#ff6a6a', '#8f0c14', '#2a0508'], enemy: ['#ffffff', '#d9d3c6', '#77716a'],
 };
-function slashGeom(f) { const s = f.owner.scale || 1, span = f.span || (f.big ? 2.8 : 2.1); return { s, span, cx: f.owner.x, cy: f.owner.y - 7 * s, a0: f.ang - f.side * span / 2 }; }
+// the arc is centred a little out in front of the body, so its ends sweep past the shoulders instead of over the head
+const SLASH_FWD = 6;
+function slashGeom(f) { const s = f.owner.scale || 1, span = f.span || (f.big ? 2.8 : 2.1), fw = SLASH_FWD * s; return { s, span, cx: f.owner.x + Math.cos(f.ang) * fw, cy: f.owner.y - 7 * s + Math.sin(f.ang) * fw * .75, a0: f.ang - f.side * span / 2 }; }
 function slashPoint(f, u, rad) {
   const g = slashGeom(f), a = g.a0 + f.side * g.span * u, r = rad || f.rad;
   return { x: g.cx + Math.cos(a) * r, y: g.cy + Math.sin(a) * r * .75, tx: -Math.sin(a) * f.side, ty: Math.cos(a) * f.side * .75 };
@@ -9303,6 +9386,8 @@ function selectBtn(b, sound) {
   for (const x of document.querySelectorAll('.menu button.sel')) x.classList.remove('sel');
   if (!b) return;
   b.classList.add('sel'); try { b.focus({ preventScroll: true }); } catch (e) { }
+  // a long list (the Chronicle) scrolls to keep the chosen entry in view
+  if (b.parentElement && b.parentElement.scrollHeight > b.parentElement.clientHeight) b.scrollIntoView({ block: 'nearest' });
   if (sound) { Sfx.init(); Sfx.play('uiMove'); }
 }
 function moveSel(d) {
@@ -9439,6 +9524,9 @@ $('btnRetry').addEventListener('click', retryRun);
 $('btnRestart').addEventListener('click', () => { writeSave(null); startRun(null); });
 $('btnRush').addEventListener('click', () => startRush());
 $('btnAgain').addEventListener('click', () => showTitle());
+$('btnOverTitle').addEventListener('click', () => showTitle());
+$('btnSchool').addEventListener('click', () => { Sfx.init(); Sfx.play('uiPick'); toggleSchool(); });
+loadSchool();
 $('btnControls').addEventListener('click', () => { demo = null; showScreen('scrControls'); });
 $('btnBack').addEventListener('click', () => showScreen('scrTitle'));
 // Appearance: one button per design. Hovering (or W/S) previews it, clicking wears it.
@@ -9720,7 +9808,7 @@ function start(data) {
   requestAnimationFrame(frame);
 }
 window.claude?.hot?.snapshot?.(() => ({ run: G && !G.rush && G.state !== 'title' && G.lives > 0 && G.state !== 'won' ? { wave: G.wave, lives: G.lives, energy: Math.floor(G.waveEnergy), ult: Math.floor(G.waveUlt) } : null }));
-window.__silhouette = { get G() { return G; }, MUSIC, musicFor, areaAt, roomArea, AREAS, MISSIONS, setupMission, misEvent, misStrike, get ARENA() { return ARENA; }, get OBST() { return OBST; }, blocked, LORE, get loreFound() { return loreFound; }, loadLore, openLore, dropPage, waveClear, get faceQ() { return faceQ; }, sheet: (c, fn) => { const keep = ctx; ctx = c; try { fn(drawEntity, makePlayer); } finally { ctx = keep; } }, get BINDS() { return BINDS; }, setBind, loadBinds, refreshKeyText, defaultBinds, bindVerb, withKeys, openKeys, closeKeys, NOTES, ROLL_T, CLICK_BUFFER, ELITES, TWISTS, makeElite, makeCaptain, makeTwins, markElites, eliteCount, pickTwist, makeStoryOrder, validOrder, pickLayout, ROOM_ALTS, GUARD_HALL, CELLAR_ROOM, SCRIPTORIUM_ROOM, FIRST_UNDER, SLUICE_ROOM, UNDER_ROOMS, AQUEDUCT_ROOM, floodAt, drownGrab, breakFree, riseFromWater, buildWave, DROWN_RISE, playerDie, AREAS, AREA_WAVES, STORY_WAVES, LAST_ROOM, waveStep, waveSize, waveBuff, storyBossAt, areaAt, showOver, loadSave, startRun, afterDeath, flameLevel, spawnFromGate, splitApart, setAlight, showCards, pickCard, dealCards, bv, BUFFS, get ROOM() { return ROOM; }, get OBST() { return OBST; }, loadRoom, ROOM_DEFS, THRONE_ROOM, blocked, parryAlert, TYPES, beginWave, startBetrayal, beginBoss, update, render, startRun, keys, pressed, kill, damageEnemy, Music, Sfx, musicFor, addEnergy, parrySuccess, hurtTarget, updateHud, startRush, makeEnemy, makeBeam, beamLen, RUSH_BOSSES, rushWave, showTitle, musicTracks: MUSIC, armPose, bark, get OBST_LIST() { return OBST; },  inWater, inMud, buildRoom, CART_WARN, SKINS, setSkin, get skinId() { return skinId; }, SOUNDS, DODGE_ENERGY, frame, WELL_ROOM, setupLeviathan, leviStuck, leviHeight, dryAt, CRACK_T, LEVI_STUCK, LEVI_PARRY_STUCK, LEVI_LUNGE_SPD, parryMelee, hostiles, drawFloodLife, tryRend, bossHand, rebuildBuffs, BETRAYER_WAVE, packSize, HOUND_TUMBLE, houndGo, blowHorn, STABLES_ROOM, kickZone, CLOCK_ROOM, OBSERVATORY_ROOM, ARCHIVE_ROOM, MIRROR_ROOM, KNIGHTS_ROOM, BATHS_ROOM, beamPath, chopZone, makeBeam, buildWave, windOf, SPIRE_ROOMS, FIRST_SPIRE, migrateSave, makeStoryOrder, validOrder, pendBob, moonX, stackGap, stackShelves, AREAS, areaRooms, lanternAt, exposedAt, LL_R, beginKing, startThrone, kingPhase, kingBlaze, inLampShade, lampSrc, KING_BLAZE_WIND, twinsRoom, resumeWave, perchGarg, gargSnatch, gargGround, gargWake, GARG_HOLD, GARG_SWOOP_SPD, ROOST_ROOM, rookReach, rookDown, rookSheltered, ROOK_PERCH, tryBlast, GALE_R, FORGE_ROOMS, FIRST_FORGE, numWord, LIGHT_FX, lampSrc };
+window.__silhouette = { get G() { return G; }, slashFx, tryUlt, endUlt, MUSIC, musicFor, areaAt, roomArea, AREAS, MISSIONS, setupMission, misEvent, misStrike, get ARENA() { return ARENA; }, get OBST() { return OBST; }, blocked, LORE, get loreFound() { return loreFound; }, loadLore, openLore, dropPage, waveClear, get faceQ() { return faceQ; }, sheet: (c, fn) => { const keep = ctx; ctx = c; try { fn(drawEntity, makePlayer); } finally { ctx = keep; } }, get BINDS() { return BINDS; }, setBind, loadBinds, refreshKeyText, defaultBinds, bindVerb, withKeys, openKeys, closeKeys, NOTES, ROLL_T, CLICK_BUFFER, ELITES, TWISTS, makeElite, makeCaptain, makeTwins, markElites, eliteCount, pickTwist, makeStoryOrder, validOrder, pickLayout, ROOM_ALTS, GUARD_HALL, CELLAR_ROOM, SCRIPTORIUM_ROOM, FIRST_UNDER, SLUICE_ROOM, UNDER_ROOMS, AQUEDUCT_ROOM, floodAt, drownGrab, breakFree, riseFromWater, buildWave, DROWN_RISE, playerDie, AREAS, AREA_WAVES, STORY_WAVES, LAST_ROOM, waveStep, waveSize, waveBuff, storyBossAt, areaAt, showOver, loadSave, startRun, afterDeath, flameLevel, spawnFromGate, splitApart, setAlight, showCards, pickCard, dealCards, bv, BUFFS, get ROOM() { return ROOM; }, get OBST() { return OBST; }, loadRoom, ROOM_DEFS, THRONE_ROOM, blocked, parryAlert, TYPES, beginWave, startBetrayal, beginBoss, update, render, startRun, keys, pressed, kill, damageEnemy, Music, Sfx, musicFor, addEnergy, parrySuccess, hurtTarget, updateHud, startRush, makeEnemy, makeBeam, beamLen, RUSH_BOSSES, rushWave, showTitle, musicTracks: MUSIC, armPose, bark, get OBST_LIST() { return OBST; },  inWater, inMud, buildRoom, CART_WARN, SKINS, setSkin, get skinId() { return skinId; }, SOUNDS, DODGE_ENERGY, frame, WELL_ROOM, setupLeviathan, leviStuck, leviHeight, dryAt, CRACK_T, LEVI_STUCK, LEVI_PARRY_STUCK, LEVI_LUNGE_SPD, parryMelee, hostiles, drawFloodLife, tryRend, bossHand, rebuildBuffs, BETRAYER_WAVE, packSize, HOUND_TUMBLE, houndGo, blowHorn, STABLES_ROOM, kickZone, CLOCK_ROOM, OBSERVATORY_ROOM, ARCHIVE_ROOM, MIRROR_ROOM, KNIGHTS_ROOM, BATHS_ROOM, beamPath, chopZone, makeBeam, buildWave, windOf, SPIRE_ROOMS, FIRST_SPIRE, migrateSave, makeStoryOrder, validOrder, pendBob, moonX, stackGap, stackShelves, AREAS, areaRooms, lanternAt, exposedAt, LL_R, beginKing, startThrone, kingPhase, kingBlaze, inLampShade, lampSrc, KING_BLAZE_WIND, twinsRoom, resumeWave, perchGarg, gargSnatch, gargGround, gargWake, GARG_HOLD, GARG_SWOOP_SPD, ROOST_ROOM, rookReach, rookDown, rookSheltered, ROOK_PERCH, tryBlast, GALE_R, FORGE_ROOMS, FIRST_FORGE, numWord, LIGHT_FX, lampSrc };
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 })();
 </script>

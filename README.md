@@ -10,6 +10,7 @@ The run starts outside the walls on a rainy, moonlit night. The castle is split 
 - **The spires**: the castle's storm-lashed rooftops, nine rooms in the open: the rooftops, the rampart walk, the rookery, the lightning tower, the broken bridge, the weathervane roof, the gargoyle gallery, the chimney stacks and the collapsed roof. Gargoyles wait on its edges. Its boss is **the Storm Rook**, on the rook's roost.
 - **The royal halls** (waves 41–50) always come last: the banquet hall, the treasury, the ballroom, the rain-soaked battlements, the hall of mirrors, the hall of knights and the royal baths, plus the nine rooms of **the King's forge**, all drawn from one shared pool so each climb mixes them differently. Wave 45 is always the guard hall, where your clone turns on you as **the Betrayer**, and wave 49 the royal antechamber. Wave 50 is the throne, and **King Aurel the Undimmed**.
 - **The bosses speak:** the Iron Warden has nothing left inside to speak with ("It does not speak. It only swings."), the Ember Archmage greets you ("More dark, come to the light."), and a Drowned rises in the sluice pool to whisper what lives there.
+- **Don't hug a boss:** every boss hits hard, and if you stay within arm's reach of one for a second it slams the floor around itself (a red ring closes in and the ! goes yellow, then red): parry it on red or roll out. It never does this while it is stuck, stunned or knocked down, so those openings are still yours.
 - Every area has nine rooms of its own, so no room comes round twice in an area.
 - Beating an area boss deals three Legendary blessings to choose from. Bosses with a blessing of their own put it among the three, once per run.
 - **The Iron Warden's blessing, Iron Charge:** your roll becomes a shoulder charge. You still can't be hurt while rolling, but anyone you roll into takes a hit, is knocked back hard and is stunned for a moment. A knight you charge from the front loses its shield, and a soldier driven into furniture or a wall is slammed for extra damage and stays stunned longer. Bosses only take the hit.
@@ -236,8 +237,8 @@ The Betrayer grows stronger with every blessing you carry in, so a stacked run s
 | Input | Action |
 | --- | --- |
 | W A S D | Move |
-| Left click | Slash. Every swing needs its own click; holding the button does nothing more. Click fast to chain the combo (every 3rd swing is a heavy finisher). A click up to 3 frames early, at the end of a roll, a parry or the previous swing, still counts |
-| Right click | Parry when the ! above an enemy turns red (+30 energy, up to +50 for parries in a row without getting hit). A good parry is ready again at once, so you can answer every hit of a combo |
+| Left click | Slash. Every swing needs its own click (unless School mode is on, see below). Click fast to chain the combo (every 3rd swing is a heavy finisher). A click up to 3 frames early, at the end of a roll, a parry or the previous swing, still counts |
+| Right click | Parry when the ! above an enemy turns red (+30 energy, up to +50 for parries in a row without getting hit). A good parry is ready again at once, so you can answer every hit of a combo. After a clean parry your guard holds a quarter of a second longer, so the next attacker in line is parried too, up to the third; then press again. Every parry also makes the soldiers crowding round you flinch back a few steps before they come again. |
 | Space / X | Roll: you're untouchable mid-tumble, so arrows and strikes miss. Rolling through an attack that would have hit you gives +25 energy (once per roll) |
 | E | Shadow Blast (50 energy) |
 | C | Rending slash (25 energy, unlocks on wave 3) |
@@ -247,6 +248,8 @@ The Betrayer grows stronger with every blessing you carry in, so a stacked run s
 | Esc / P · M | Pause · Sound and music |
 
 These are the default keys. Every action can be moved, so the whole game can be played on the keyboard alone (see Key bindings below).
+
+**School mode:** a toggle in the bottom-right corner of the title screen. With it on, holding the slash button keeps swinging as fast as clicking would, so you don't have to click for every swing. The setting is remembered.
 
 ## Key bindings
 
@@ -267,6 +270,6 @@ Slash, parry and roll sit in the top right. The moves that cost energy sit in a 
 
 Every 3 kills a green heal orb drops near you. Walk over it for +15 HP and +25 energy before it fades (8 seconds). Energy past 100 isn't wasted: every 25 extra counts as a kill toward your ultimate. The final boss drops one at 75%, 50% and 25% health.
 
-The ultimate bar fills as you kill. Press 1 to wreathe yourself in shadow flame for 30 seconds or until the wave ends. Your slashes reach much farther, you move faster, and a 100-point shield absorbs damage before your health does.
+The ultimate bar fills as you kill. Press 1 to wreathe yourself in shadow flame for 15 seconds or until the wave ends. Your slashes reach much farther, you move faster, and a 10-point shield takes the edge off the first hit. For its first 5 seconds your health climbs back fast enough to go from empty to full, so it is best saved for when you are hurt.
 
 Plays with a mouse and keyboard, or with the keyboard alone after rebinding slash and parry. The whole game is the single file `index.html`.
